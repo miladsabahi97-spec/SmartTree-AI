@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 SmartTree AI - فروشگاه سموم و تشخیص بیماری</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* ===== همه استایل‌ها در اینجا ===== */
+        :root {
+            --primary: #00b894;
+            --primary-dark: #00876c;
+            --primary-light: #e0f7f0;
+            --secondary: #6c5ce7;
+            --accent: #fdcb6e;
+            --danger: #e17055;
+            --success: #00b894;
+            --bg: #f0f4f9;
+            --card: rgba(255, 255, 255, 0.9);
+            --text: #1a2e3f;
+            --text-secondary: #4a6378;
+            --shadow: 0 8px 32px rgba(0,0,0,0.08);
+            --radius: 20px;
+            --transition: all 0.3s ease;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif; }
+        body { background:var(--bg); color:var(--text); min-height:100vh; }
+        body.dark { --bg:#0d1b1a; --card:rgba(20,40,36,0.9); --text:#e6f0ec; --text-secondary:#9bb8ae; --shadow:0 8px 32px rgba(0,0,0,0.5); }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-thumb { background:var(--primary); border-radius:10px; }
+        
+        /* ===== انیمیشن‌ها ===== */
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .animate-float { animation:float 3s ease-in-out infinite; }
+        .animate-pulse { animation:pulse 2s ease-in-out infinite; }
+        
+        /* ===== صفحه خوش‌آمدگویی ===== */
+        .welcome-page {
+            position:fixed; inset:0; z-index:10000;
+            display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg, #0d1b1a, #1a3a2e, #0d1b1a);
+            transition:all 0.8s ease;
+        }
+        .welcome-page.hidden { opacity:0; pointer-events:none; transform:scale(1.1); }
+        .welcome-content { text-align:center; color:white; padding:40px; max-width:700px; }
+        .welcome-content .logo-icon { font-size:80px; display:block; margin-bottom:20px; animation:float 3s ease-in-out infinite; }
+        .welcome-content h1 {
+            font-size:52px; font-weight:900; margin-bottom:12px;
+            background:linear-gradient(135deg,#00b894,#6c5ce7,#fdcb6e);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            background-size:300% 300%;
+            animation:float 4s ease-in-out infinite;
+        }
+        .welcome-content p { font-size:18px; opacity:0.9; margin-bottom:25px; line-height:1.8; }
+        .welcome-content .enter-btn {
+            background:linear-gradient(135deg,#00b894,#6c5ce7);
+            border:none; color:white; padding:16px 50px; border-radius:60px;
+            font-size:20px; font-weight:700; cursor:pointer;
+            box-shadow:0 8px 32px rgba(0,184,148,0.4);
+            transition:var(--transition);
+        }
+        .welcome-content .enter-btn:hover { transform:scale(1.08); }
+        .welcome-content .features-preview {
+            display:flex; gap:15px; justify-content:center; margin-top:25px; flex-wrap:wrap;
+        }
+        .welcome-content .features-preview span {
+            background:rgba(255,255,255,0.15);
+            padding:8px 20px; border-radius:40px;
+            border:1px solid rgba(255,255,255,0.2);
+            font-size:14px;
+        }
+        
+        /* ===== هدر ===== */
+        .app-header {
+            background:var(--card); backdrop-filter:blur(20px);
+            padding:12px 25px; box-shadow:var(--shadow);
+            display:flex; justify-content:space-between; align-items:center;
+            position:sticky; top:0; z-index:100;
+            border-bottom:2px solid var(--primary-light);
+            flex-wrap:wrap; gap:10px;
+        }
+        .app-header .logo { font-size:22px; font-weight:800; display:flex; align-items:center; gap:10px; }
+        .app-header .logo i { color:var(--primary); font-size:26px; animation:spin 10s linear infinite; }
+        .app-header .logo span { color:var(--primary); }
+        .header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .header-actions .weather {
+            background:var(--bg); padding:6px 16px; border-radius:40px;
+            font-size:13px; display:flex; align-items:center; gap:8px;
+        }
+        .header-actions .consultant-number {
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; padding:6px 18px; border-radius:40px;
+            font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px;
+            animation:pulse 2s ease-in-out infinite; cursor:pointer;
+        }
+        .header-actions .consultant-number:hover { transform:scale(1.05); }
+        .header-actions .cart-btn {
+            background:var(--primary); color:white; border:none;
+            padding:8px 18px; border-radius:40px; font-size:14px;
+            font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;
+            position:relative; transition:var(--transition);
+        }
+        .header-actions .cart-btn:hover { transform:scale(1.05); background:var(--primary-dark); }
+        .header-actions .cart-btn .cart-badge {
+            background:var(--danger); color:white; border-radius:50%;
+            width:22px; height:22px; font-size:11px;
+            display:flex; align-items:center; justify-content:center;
+            position:absolute; top:-8px; right:-8px;
+        }
+        .header-actions .dark-toggle {
+            background:var(--bg); border:none; width:40px; height:40px;
+            border-radius:50%; cursor:pointer; font-size:17px; color:var(--text);
+            transition:var(--transition);
+        }
+        .header-actions .dark-toggle:hover { transform:scale(1.1); background:var(--primary-light); }
+        
+        /* ===== بدنه ===== */
+        .app-body { display:flex; max-width:1600px; margin:0 auto; padding:20px 25px; gap:20px; }
+        
+        /* ===== سایدبار ===== */
+        .sidebar {
+            width:210px; min-width:180px; background:var(--card);
+            backdrop-filter:blur(20px); border-radius:var(--radius);
+            padding:16px 12px; box-shadow:var(--shadow);
+            height:fit-content; position:sticky; top:80px;
+            border:1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar a {
+            display:flex; align-items:center; gap:12px;
+            padding:10px 14px; border-radius:12px;
+            color:var(--text-secondary); text-decoration:none;
+            font-size:14px; transition:var(--transition);
+            margin-bottom:3px; cursor:pointer;
+        }
+        .sidebar a:hover { background:var(--primary-light); color:var(--primary); transform:translateX(-4px); }
+        .sidebar a.active {
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; box-shadow:0 4px 14px rgba(0,184,148,0.3);
+        }
+        .sidebar a i { width:20px; }
+        .sidebar .premium-box {
+            margin-top:16px; background:linear-gradient(145deg,#fef9e7,#fdebd0);
+            padding:14px; border-radius:var(--radius); text-align:center;
+            border:1px solid #f5cba7;
+        }
+        body.dark .sidebar .premium-box {
+            background:linear-gradient(145deg,#2a3d2a,#3d4a2a);
+            border-color:#5a7a4a;
+        }
+        .sidebar .premium-box h4 { color:#7b4a1e; font-size:15px; }
+        body.dark .sidebar .premium-box h4 { color:#f0d89a; }
+        .sidebar .premium-box p { font-size:12px; color:#5d4037; margin:6px 0 10px; }
+        body.dark .sidebar .premium-box p { color:#c4b08a; }
+        .btn-premium {
+            background:linear-gradient(135deg,#d4a14b,#b8893a);
+            color:white; border:none; padding:8px 16px;
+            border-radius:40px; font-weight:700; cursor:pointer; width:100%;
+        }
+        .btn-premium:hover { transform:scale(1.05); }
+        
+        /* ===== صفحات ===== */
+        .page-content { flex:1; min-width:0; }
+        .page { display:none; animation:fadeInUp 0.4s ease-out; }
+        .page.active { display:block; }
+        
+        /* ===== صفحه خانه ===== */
+        .stats-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+            gap:14px; margin-bottom:20px;
+        }
+        .stat-card {
+            background:var(--card); padding:16px 18px;
+            border-radius:var(--radius); box-shadow:var(--shadow);
+            border-right:4px solid var(--primary);
+            transition:var(--transition); cursor:pointer;
+        }
+        .stat-card:hover { transform:translateY(-4px); }
+        .stat-card .number { font-size:26px; font-weight:800; }
+        .stat-card .label { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+        .stat-card i { float:left; font-size:22px; opacity:0.3; color:var(--primary); }
+        
+        /* ===== فروشگاه ===== */
+        .shop-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:20px; flex-wrap:wrap; gap:12px;
+        }
+        .shop-header h2 { font-size:24px; display:flex; align-items:center; gap:10px; }
+        .shop-header h2 i { color:var(--primary); }
+        .shop-header select {
+            padding:8px 16px; border-radius:40px;
+            border:2px solid var(--primary-light);
+            background:var(--card); color:var(--text);
+            font-size:14px; cursor:pointer; outline:none;
+        }
+        .shop-header select:focus { border-color:var(--primary); }
+        
+        .product-grid {
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+            gap:18px; margin-bottom:30px;
+        }
+        .product-card {
+            background:var(--card); border-radius:var(--radius);
+            padding:16px; box-shadow:var(--shadow);
+            border:1px solid rgba(255,255,255,0.1);
+            transition:var(--transition); position:relative;
+        }
+        .product-card:hover { transform:translateY(-6px); box-shadow:0 16px 48px rgba(0,0,0,0.12); }
+        .product-card .product-badge {
+            position:absolute; top:10px; right:10px;
+            padding:3px 12px; border-radius:40px;
+            font-size:11px; font-weight:700;
+        }
+        .product-card .product-badge.sale { background:var(--danger); color:white; }
+        .product-card .product-badge.new { background:var(--success); color:white; }
+        .product-card .product-image {
+            width:100%; height:150px;
+            background:var(--primary-light);
+            border-radius:12px; display:flex;
+            align-items:center; justify-content:center;
+            font-size:50px; margin-bottom:10px;
+        }
+        .product-card h3 { font-size:16px; margin-bottom:4px; }
+        .product-card .product-desc { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
+        .product-card .product-price { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .product-card .product-price .current { font-size:18px; font-weight:800; color:var(--primary); }
+        .product-card .product-price .old { font-size:13px; color:var(--text-secondary); text-decoration:line-through; }
+        .product-card .add-to-cart {
+            width:100%; padding:10px; border:none; border-radius:40px;
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; font-weight:700; cursor:pointer; transition:var(--transition);
+        }
+        .product-card .add-to-cart:hover { transform:scale(1.03); }
+        
+        /* ===== سبد خرید ===== */
+        .cart-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.5);
+            z-index:999; display:none;
+        }
+        .cart-overlay.show { display:block; }
+        .cart-sidebar {
+            position:fixed; top:0; left:-400px;
+            width:380px; max-width:90vw; height:100vh;
+            background:var(--card); backdrop-filter:blur(20px);
+            box-shadow:-8px 0 32px rgba(0,0,0,0.2);
+            z-index:1000; transition:all 0.4s ease;
+            padding:20px; display:flex; flex-direction:column;
+            border-left:1px solid rgba(255,255,255,0.1);
+        }
+        .cart-sidebar.open { left:0; }
+        .cart-sidebar .cart-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:16px; padding-bottom:12px;
+            border-bottom:2px solid var(--primary-light);
+        }
+        .cart-sidebar .cart-header h3 { display:flex; align-items:center; gap:10px; }
+        .cart-sidebar .cart-header .close-cart {
+            background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);
+        }
+        .cart-sidebar .cart-items { flex:1; overflow-y:auto; padding:4px 0; }
+        .cart-sidebar .cart-item {
+            display:flex; align-items:center; gap:12px;
+            padding:10px 0; border-bottom:1px solid var(--bg);
+        }
+        .cart-sidebar .cart-item .item-icon { font-size:28px; width:45px; text-align:center; }
+        .cart-sidebar .cart-item .item-info { flex:1; }
+        .cart-sidebar .cart-item .item-info h4 { font-size:14px; }
+        .cart-sidebar .cart-item .item-info .item-price { font-size:13px; color:var(--primary); font-weight:700; }
+        .cart-sidebar .cart-item .item-qty { display:flex; align-items:center; gap:6px; }
+        .cart-sidebar .cart-item .item-qty button {
+            width:28px; height:28px; border-radius:50%; border:none;
+            background:var(--primary-light); color:var(--text);
+            cursor:pointer; font-size:14px; font-weight:700;
+        }
+        .cart-sidebar .cart-item .item-qty button:hover { background:var(--primary); color:white; }
+        .cart-sidebar .cart-item .item-qty span { font-weight:700; min-width:24px; text-align:center; }
+        .cart-sidebar .cart-item .remove-item { background:none; border:none; color:var(--danger); cursor:pointer; }
+        .cart-sidebar .cart-footer {
+            padding-top:16px; border-top:2px solid var(--primary-light);
+        }
+        .cart-sidebar .cart-footer .total {
+            display:flex; justify-content:space-between;
+            font-size:18px; font-weight:700; margin-bottom:12px;
+        }
+        .cart-sidebar .cart-footer .total .total-price { color:var(--primary); }
+        .cart-sidebar .cart-footer .checkout-btn {
+            width:100%; padding:14px; border:none; border-radius:40px;
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; font-size:16px; font-weight:700; cursor:pointer;
+            transition:var(--transition);
+        }
+        .cart-sidebar .cart-footer .checkout-btn:hover { transform:scale(1.02); }
+        .cart-sidebar .cart-footer .checkout-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        
+        /* ===== بیماری‌ها ===== */
+        .filter-bar {
+            background:var(--card); padding:12px 18px;
+            border-radius:var(--radius); box-shadow:var(--shadow);
+            margin-bottom:18px; display:flex; flex-wrap:wrap;
+            align-items:center; gap:8px 12px;
+        }
+        .filter-bar label { font-weight:700; font-size:13px; }
+        .filter-tag {
+            background:var(--bg); padding:4px 14px; border-radius:40px;
+            font-size:12px; cursor:pointer; border:2px solid transparent;
+            transition:var(--transition);
+        }
+        .filter-tag:hover { border-color:var(--primary); }
+        .filter-tag.active { background:var(--primary); color:white; border-color:var(--primary); }
+        .disease-category { margin-bottom:25px; }
+        .disease-category .category-title {
+            font-size:20px; font-weight:700; margin-bottom:14px;
+            padding-bottom:6px; border-bottom:3px solid var(--primary);
+            display:flex; align-items:center; gap:10px;
+        }
+        .disease-grid {
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+            gap:16px;
+        }
+        .disease-card {
+            background:var(--card); border-radius:var(--radius);
+            padding:16px; box-shadow:var(--shadow);
+            border-right:4px solid var(--primary);
+            transition:var(--transition); cursor:pointer;
+        }
+        .disease-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.12); }
+        .disease-card .card-header { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+        .disease-card .icon { font-size:28px; }
+        .disease-card h4 { font-size:16px; flex:1; }
+        .disease-card .sub { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
+        .disease-card .tags { display:flex; flex-wrap:wrap; gap:5px; }
+        .level-badge {
+            padding:2px 12px; border-radius:40px; font-size:10px; font-weight:700;
+        }
+        .level-low { background:#d5f0d5; color:#1f6b3a; }
+        .level-mid { background:#fdebd0; color:#a86f2b; }
+        .level-high { background:#fadbd8; color:#b03a2e; }
+        body.dark .level-low { background:#1a4a2a; color:#7dcc8a; }
+        body.dark .level-mid { background:#4a3d1a; color:#e8b85a; }
+        body.dark .level-high { background:#4a1a1a; color:#e87a6a; }
+        .region-tag {
+            background:var(--bg); padding:2px 10px; border-radius:40px;
+            font-size:10px; color:var(--text-secondary);
+        }
+        .treatment-box {
+            margin-top:8px; padding:8px 12px;
+            background:var(--primary-light); border-radius:10px;
+            font-size:12px; display:none;
+        }
+        .treatment-box.show { display:block; animation:fadeInUp 0.3s ease-out; }
+        .treatment-box strong { color:var(--primary); }
+        .treatment-box .treatment-item {
+            display:flex; align-items:flex-start; gap:6px; padding:3px 0;
+        }
+        .treatment-box .treatment-item i { color:var(--primary); margin-top:2px; }
+        
+        /* ===== نقشه و نمودار ===== */
+        .map-box, .chart-box {
+            background:var(--card); border-radius:var(--radius);
+            padding:18px 20px; box-shadow:var(--shadow);
+        }
+        .map-box h3, .chart-box h3 {
+            font-size:16px; margin-bottom:12px;
+            display:flex; align-items:center; gap:8px;
+        }
+        #map { height:350px; border-radius:12px; }
+        #diseaseChart { max-height:250px; max-width:100%; }
+        
+        /* ===== سفارشات ===== */
+        .order-card {
+            background:var(--card); border-radius:var(--radius);
+            padding:16px; box-shadow:var(--shadow);
+            margin-bottom:14px;
+            border:1px solid rgba(255,255,255,0.1);
+        }
+        .order-card .order-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:8px; flex-wrap:wrap; gap:6px;
+        }
+        .order-card .order-header .order-id { font-weight:700; color:var(--primary); }
+        .order-card .order-header .order-status {
+            padding:3px 12px; border-radius:40px; font-size:12px; font-weight:700;
+        }
+        .order-status.pending { background:#fdebd0; color:#a86f2b; }
+        .order-status.paid { background:#d5f0d5; color:#1f6b3a; }
+        .order-status.shipped { background:#d5e8f0; color:#1f5a7a; }
+        .order-status.delivered { background:#e0d5f0; color:#5a3a7a; }
+        .order-card .order-items { font-size:13px; color:var(--text-secondary); }
+        .order-card .order-total { font-weight:700; color:var(--primary); margin-top:6px; }
+        
+        /* ===== مدیریت ===== */
+        .admin-panel {
+            background:var(--card); border-radius:var(--radius);
+            padding:20px; box-shadow:var(--shadow);
+        }
+        .admin-panel .admin-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:14px; flex-wrap:wrap; gap:10px;
+        }
+        .admin-panel .admin-header h3 { display:flex; align-items:center; gap:10px; color:var(--primary); }
+        .admin-stats {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+            gap:10px; margin-bottom:14px;
+        }
+        .admin-stat {
+            background:var(--bg); padding:10px 14px; border-radius:12px; text-align:center;
+        }
+        .admin-stat .num { font-size:22px; font-weight:800; color:var(--primary); }
+        .admin-stat .label { font-size:11px; color:var(--text-secondary); }
+        .admin-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .admin-table th { background:var(--primary); color:white; padding:8px 12px; text-align:right; }
+        .admin-table td { padding:8px 12px; border-bottom:1px solid var(--bg); }
+        .admin-table tr:hover td { background:var(--primary-light); }
+        .msg-delete {
+            background:var(--danger); color:white; border:none;
+            padding:3px 10px; border-radius:6px; cursor:pointer;
+        }
+        .msg-delete:hover { transform:scale(1.1); }
+        
+        /* ===== چت‌بات ===== */
+        .chatbot-container {
+            position:fixed; bottom:25px; right:25px; z-index:999;
+        }
+        .chatbot-toggle {
+            width:60px; height:60px; border-radius:50%;
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; border:none; font-size:26px; cursor:pointer;
+            box-shadow:0 8px 32px rgba(0,184,148,0.4);
+            transition:var(--transition); display:flex;
+            align-items:center; justify-content:center; position:relative;
+        }
+        .chatbot-toggle:hover { transform:scale(1.1); }
+        .chatbot-toggle .badge {
+            position:absolute; top:-4px; right:-4px;
+            background:var(--danger); color:white; border-radius:50%;
+            width:20px; height:20px; font-size:10px;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .chatbot-window {
+            position:fixed; bottom:100px; right:25px;
+            width:350px; max-width:90vw; height:450px; max-height:70vh;
+            background:var(--card); backdrop-filter:blur(20px);
+            border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,0.3);
+            display:none; flex-direction:column; overflow:hidden;
+            border:1px solid rgba(255,255,255,0.1);
+        }
+        .chatbot-window.open { display:flex; animation:fadeInUp 0.3s ease-out; }
+        .chatbot-header {
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; padding:14px 18px;
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        .chatbot-header h4 { display:flex; align-items:center; gap:8px; font-size:15px; }
+        .chatbot-header .close-btn { background:none; border:none; color:white; font-size:18px; cursor:pointer; }
+        .chatbot-messages {
+            flex:1; padding:14px; overflow-y:auto;
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .chatbot-messages .msg {
+            max-width:80%; padding:8px 14px; border-radius:14px;
+            font-size:13px; line-height:1.5;
+        }
+        .chatbot-messages .msg.bot {
+            background:var(--bg); color:var(--text);
+            align-self:flex-start; border-bottom-left-radius:4px;
+        }
+        .chatbot-messages .msg.user {
+            background:var(--primary); color:white;
+            align-self:flex-end; border-bottom-right-radius:4px;
+        }
+        .chatbot-messages .msg .time { font-size:9px; opacity:0.6; margin-top:3px; display:block; }
+        .chatbot-messages .typing {
+            background:var(--bg); padding:8px 14px; border-radius:14px;
+            align-self:flex-start; display:none;
+        }
+        .chatbot-messages .typing.show { display:block; }
+        .chatbot-messages .typing span {
+            display:inline-block; animation:typingDot 1.4s infinite;
+        }
+        .chatbot-messages .typing span:nth-child(2) { animation-delay:0.2s; }
+        .chatbot-messages .typing span:nth-child(3) { animation-delay:0.4s; }
+        @keyframes typingDot {
+            0%,60%,100%{opacity:0} 30%{opacity:1}
+        }
+        .chatbot-input {
+            display:flex; padding:10px 14px; gap:8px;
+            border-top:1px solid var(--bg);
+        }
+        .chatbot-input input {
+            flex:1; padding:8px 14px; border:2px solid var(--bg);
+            border-radius:30px; outline:none; font-size:13px;
+            background:var(--bg); color:var(--text);
+        }
+        .chatbot-input input:focus { border-color:var(--primary); }
+        .chatbot-input button {
+            background:var(--primary); color:white; border:none;
+            border-radius:50%; width:40px; height:40px;
+            cursor:pointer; font-size:16px; transition:var(--transition);
+        }
+        .chatbot-input button:hover { transform:scale(1.05); }
+        
+        /* ===== توست ===== */
+        .toast {
+            position:fixed; bottom:90px; right:25px;
+            background:var(--card); backdrop-filter:blur(20px);
+            color:var(--text); padding:12px 24px; border-radius:14px;
+            box-shadow:0 8px 32px rgba(0,0,0,0.2);
+            font-weight:600; transform:translateY(100px); opacity:0;
+            transition:0.4s; z-index:999; max-width:380px;
+            border:1px solid rgba(255,255,255,0.1);
+        }
+        .toast.show { transform:translateY(0); opacity:1; }
+        .toast.error { border-color:var(--danger); color:var(--danger); }
+        
+        /* ===== فوتر ===== */
+        .app-footer {
+            text-align:center; padding:16px;
+            color:var(--text-secondary); font-size:12px;
+            border-top:1px solid var(--primary-light); margin-top:10px;
+        }
+        
+        /* ===== ریسپانسیو ===== */
+        @media(max-width:1024px){
+            .app-body{flex-direction:column;padding:16px}
+            .sidebar{position:relative;top:0;width:100%;display:flex;flex-wrap:wrap;gap:4px;padding:12px}
+            .sidebar a{padding:6px 12px;font-size:12px}
+            .sidebar .premium-box{display:none}
+        }
+        @media(max-width:768px){
+            .app-header{padding:10px 16px}
+            .header-actions .weather{font-size:11px;padding:4px 10px}
+            .header-actions .consultant-number{font-size:11px;padding:4px 12px}
+            .product-grid{grid-template-columns:1fr 1fr}
+            .cart-sidebar{width:100%;left:-100%}
+            .welcome-content h1{font-size:32px}
+            .welcome-content p{font-size:16px}
+            .welcome-content .logo-icon{font-size:50px}
+        }
+        @media(max-width:480px){
+            .product-grid{grid-template-columns:1fr}
+            .stats-grid{grid-template-columns:1fr 1fr}
+            .disease-grid{grid-template-columns:1fr}
+            .shop-header{flex-direction:column;align-items:stretch}
+            .welcome-content h1{font-size:24px}
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== صفحه خوش‌آمدگویی ===== -->
+<div class="welcome-page" id="welcomePage">
+    <div class="welcome-content">
+        <span class="logo-icon">🌳</span>
+        <h1>SmartTree AI</h1>
+        <p>🌱 فروشگاه تخصصی سموم و تشخیص بیماری گیاهان<br>
+        با هوش مصنوعی و مشاوره تخصصی</p>
+        <button class="enter-btn" onclick="enterSite()">🚀 ورود به سایت</button>
+        <div class="features-preview">
+            <span>🛒 خرید سموم</span>
+            <span>🤖 تشخیص AI</span>
+            <span>📞 مشاوره</span>
+            <span>🌿 ۲۴ بیماری</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== سایت اصلی ===== -->
+<div id="mainContent" style="display:none;">
+
+    <!-- ===== توست ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== هدر ===== -->
+    <header class="app-header">
+        <div class="logo"><i class="fas fa-tree"></i> Smart<span>Tree</span> AI</div>
+        <div class="header-actions">
+            <div class="weather"><i class="fas fa-map-pin"></i> تهران <span><i class="fas fa-sun"></i> ۲۵°C</span></div>
+            <div class="consultant-number" onclick="window.location.href='tel:09381491058'">
+                <i class="fas fa-phone"></i> ۰۹۳۸۱۴۹۱۰۵۸
+            </div>
+            <button class="cart-btn" onclick="toggleCart()">
+                <i class="fas fa-shopping-cart"></i> سبد خرید
+                <span class="cart-badge" id="cartBadge">0</span>
+            </button>
+            <button class="dark-toggle" onclick="toggleDark()"><i class="fas fa-moon"></i></button>
+        </div>
+    </header>
+
+    <!-- ===== بدنه ===== -->
+    <div class="app-body">
+
+        <!-- ===== سایدبار ===== -->
+        <nav class="sidebar">
+            <a class="active" data-page="home" onclick="navigateTo('home',this)"><i class="fas fa-home"></i> خانه</a>
+            <a data-page="shop" onclick="navigateTo('shop',this)"><i class="fas fa-store"></i> فروشگاه</a>
+            <a data-page="ai" onclick="navigateTo('ai',this)"><i class="fas fa-robot"></i> تشخیص AI</a>
+            <a data-page="diseases" onclick="navigateTo('diseases',this)"><i class="fas fa-disease"></i> بیماری‌ها</a>
+            <a data-page="map" onclick="navigateTo('map',this)"><i class="fas fa-globe-americas"></i> نقشه</a>
+            <a data-page="orders" onclick="navigateTo('orders',this)"><i class="fas fa-truck"></i> سفارشات</a>
+            <a data-page="admin" onclick="navigateTo('admin',this)"><i class="fas fa-user-shield"></i> مدیریت</a>
+            <a onclick="openChatbot()"><i class="fas fa-comment-dots"></i> چت‌بات</a>
+            <div class="premium-box">
+                <h4>💎 پریمیوم</h4>
+                <p>تخفیف ویژه + مشاوره رایگان</p>
+                <button class="btn-premium" onclick="window.location.href='tel:09381491058'">تماس با مشاور</button>
+            </div>
+        </nav>
+
+        <!-- ===== محتوای صفحات ===== -->
+        <div class="page-content">
+
+            <!-- ===== صفحه خانه ===== -->
+            <div class="page page-home active" id="page-home">
+                <div class="stats-grid">
+                    <div class="stat-card"><i class="fas fa-disease"></i><div class="number" id="statTotal">۲۴</div><div class="label">کل بیماری‌ها</div></div>
+                    <div class="stat-card"><i class="fas fa-store"></i><div class="number" id="statProducts">۱۲</div><div class="label">محصولات</div></div>
+                    <div class="stat-card"><i class="fas fa-truck"></i><div class="number" id="statOrders">۰</div><div class="label">سفارشات</div></div>
+                    <div class="stat-card"><i class="fas fa-robot"></i><div class="number" id="statAccuracy">۹۷%</div><div class="label">دقت AI</div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+                    <div class="disease-card" onclick="navigateTo('shop')"><div class="card-header"><span class="icon">🛒</span><h4>خرید سموم</h4></div><div class="sub">محصولات تخصصی برای درمان گیاهان</div></div>
+                    <div class="disease-card" onclick="navigateTo('ai')"><div class="card-header"><span class="icon">🤖</span><h4>تشخیص با AI</h4></div><div class="sub">تصویر برگ را آپلود کنید</div></div>
+                    <div class="disease-card" onclick="navigateTo('diseases')"><div class="card-header"><span class="icon">🌿</span><h4>۲۴ بیماری</h4></div><div class="sub">مشاهده بیماری‌ها با درمان</div></div>
+                </div>
+            </div>
+
+            <!-- ===== صفحه فروشگاه ===== -->
+            <div class="page page-shop" id="page-shop">
+                <div class="shop-header">
+                    <h2><i class="fas fa-store"></i> 🛒 فروشگاه سموم و کود</h2>
+                    <select id="shopFilter" onchange="filterProducts(this.value)">
+                        <option value="all">همه محصولات</option>
+                        <option value="pesticide">سموم</option>
+                        <option value="fertilizer">کودها</option>
+                        <option value="other">سایر محصولات</option>
+                    </select>
+                </div>
+                <div class="product-grid" id="productGrid"></div>
+            </div>
+
+            <!-- ===== صفحه تشخیص AI ===== -->
+            <div class="page page-ai" id="page-ai">
+                <div style="background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                        <h3 style="display:flex;align-items:center;gap:10px;"><i class="fas fa-robot" style="color:var(--primary);"></i> 🤖 تشخیص بیماری با هوش مصنوعی</h3>
+                        <span class="ai-status" id="aiStatus" style="background:var(--success);color:white;padding:4px 14px;border-radius:40px;font-size:12px;font-weight:600;"><i class="fas fa-circle"></i> آنلاین</span>
+                    </div>
+                    <div class="ai-upload-area" style="border:2px dashed var(--primary);border-radius:var(--radius);padding:30px 20px;text-align:center;cursor:pointer;position:relative;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:var(--primary);margin-bottom:10px;"></i>
+                        <p><strong>تصویر برگ گیاه را آپلود کنید</strong></p>
+                        <p style="font-size:12px;">پشتیبانی از JPG, PNG, WEBP</p>
+                        <input type="file" id="aiFileInput" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;" onchange="handleAIUpload(this)">
+                    </div>
+                    <div class="ai-result" id="aiResult" style="margin-top:14px;padding:14px;border-radius:var(--radius);background:var(--primary-light);display:none;">
+                        <h4>🧬 نتیجه تشخیص:</h4>
+                        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span>بیماری</span> <strong id="aiDisease">-</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span>دقت</span> <strong id="aiConfidence">-</strong></div>
+                        <div style="height:6px;background:#ddd;border-radius:10px;overflow:hidden;margin-top:4px;"><div class="fill" id="aiConfidenceBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.8s;"></div></div>
+                        <div style="display:flex;justify-content:space-between;padding:5px 0;margin-top:5px;"><span>درمان</span> <span id="aiTreatment" style="font-size:12px;">-</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== صفحه بیماری‌ها ===== -->
+            <div class="page page-diseases" id="page-diseases">
+                <div class="filter-bar">
+                    <label><i class="fas fa-sliders-h"></i> فیلتر:</label>
+                    <span class="filter-tag active" data-filter="all" onclick="filterDiseases('all',this)">همه</span>
+                    <span class="filter-tag" data-filter="low" onclick="filterDiseases('low',this)">🟢 کم خطر</span>
+                    <span class="filter-tag" data-filter="mid" onclick="filterDiseases('mid',this)">🟡 متوسط</span>
+                    <span class="filter-tag" data-filter="high" onclick="filterDiseases('high',this)">🔴 پرخطر</span>
+                </div>
+                <div id="diseasesContainer"></div>
+            </div>
+
+            <!-- ===== صفحه نقشه ===== -->
+            <div class="page page-map" id="page-map">
+                <div class="map-box"><h3><i class="fas fa-map-marked-alt" style="color:var(--primary);"></i> نقشه جهانی شیوع بیماری‌ها</h3><div id="map"></div></div>
+            </div>
+
+            <!-- ===== صفحه سفارشات ===== -->
+            <div class="page page-orders" id="page-orders">
+                <h2 style="margin-bottom:16px;"><i class="fas fa-truck" style="color:var(--primary);"></i> 📦 سفارشات شما</h2>
+                <div id="ordersContainer"><p style="color:var(--text-secondary);text-align:center;padding:40px 0;">هنوز سفارشی ثبت نشده است</p></div>
+            </div>
+
+            <!-- ===== صفحه مدیریت ===== -->
+            <div class="page page-admin" id="page-admin">
+                <div class="admin-panel">
+                    <div class="admin-header"><h3><i class="fas fa-user-shield"></i> 📋 پنل مدیریت</h3><button onclick="clearAllMessages()" style="background:var(--danger);color:white;border:none;padding:6px 16px;border-radius:40px;cursor:pointer;">🗑️ پاک کردن همه</button></div>
+                    <div class="admin-stats">
+                        <div class="admin-stat"><div class="num" id="adminTotalMsg">۰</div><div class="label">کل پیام‌ها</div></div>
+                        <div class="admin-stat"><div class="num" id="adminTodayMsg">۰</div><div class="label">پیام‌های امروز</div></div>
+                        <div class="admin-stat"><div class="num" id="adminUsers">۱</div><div class="label">کاربران</div></div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="admin-table">
+                            <thead><tr><th>#</th><th>کاربر</th><th>پیام</th><th>زمان</th><th>عملیات</th></tr></thead>
+                            <tbody id="adminMessagesBody"><tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px;">هنوز پیامی ثبت نشده است</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== فوتر ===== -->
+            <footer class="app-footer">
+                <i class="fas fa-leaf" style="color:var(--primary);"></i> SmartTree AI v6.0 · فروشگاه سموم · ۲۰۲۶
+                <br><span style="font-size:11px;">📞 مشاور: ۰۹۳۸۱۴۹۱۰۵۸</span>
+            </footer>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== سبد خرید ===== -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header"><h3><i class="fas fa-shopping-cart" style="color:var(--primary);"></i> سبد خرید</h3><button class="close-cart" onclick="toggleCart()">✕</button></div>
+    <div class="cart-items" id="cartItems"><p style="color:var(--text-secondary);text-align:center;padding:40px 0;">سبد خرید خالی است</p></div>
+    <div class="cart-footer">
+        <div class="total"><span>جمع کل:</span><span class="total-price" id="cartTotal">۰ تومان</span></div>
+        <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">پرداخت و ثبت سفارش</button>
+    </div>
+</div>
+
+<!-- ===== چت‌بات ===== -->
+<div class="chatbot-container">
+    <button class="chatbot-toggle" onclick="toggleChatbot()"><i class="fas fa-comment-dots"></i><span class="badge" id="chatBadge">۱</span></button>
+</div>
+<div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header"><h4><i class="fas fa-robot"></i> مشاور SmartTree</h4><button class="close-btn" onclick="toggleChatbot()">✕</button></div>
+    <div class="chatbot-messages" id="chatMessages">
+        <div class="msg bot">🌱 سلام! من دستیار SmartTree هستم.<span class="time">همین الان</span></div>
+        <div class="typing" id="typingIndicator"><span>●</span><span>●</span><span>●</span></div>
+    </div>
+    <div class="chatbot-input">
+        <input type="text" id="chatInput" placeholder="سوال خود را بپرسید..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<!-- ============================================================
+   جاوااسکریپت کامل - همه چیز در اینجا
+   ============================================================ -->
+<script>
+// ===== داده محصولات =====
+const PRODUCTS = [
+    {id:1,name:'سم قارچ‌کش کاپتان',category:'pesticide',icon:'🧪',price:85000,oldPrice:95000,desc:'کنترل سفیدک پودری',badge:'new'},
+    {id:2,name:'سم حشره‌کش ایمیداکلوپرید',category:'pesticide',icon:'🐜',price:120000,oldPrice:null,desc:'کنترل شته و مگس سفید',badge:'sale'},
+    {id:3,name:'کود کامل NPK 20-20-20',category:'fertilizer',icon:'🌱',price:65000,oldPrice:75000,desc:'کود کامل برای رشد گیاهان',badge:null},
+    {id:4,name:'سم کنه‌کش آبامکتین',category:'pesticide',icon:'🕷️',price:98000,oldPrice:null,desc:'کنترل کنه تارعنکبوتی',badge:null},
+    {id:5,name:'کود آهن کلات',category:'fertilizer',icon:'💚',price:45000,oldPrice:55000,desc:'رفع زردی برگ',badge:'sale'},
+    {id:6,name:'سم باکتری‌کش استرپتومایسین',category:'pesticide',icon:'🦠',price:150000,oldPrice:null,desc:'کنترل بیماری‌های باکتریایی',badge:'new'},
+    {id:7,name:'کود هیومیک اسید',category:'fertilizer',icon:'🌿',price:55000,oldPrice:null,desc:'بهبود ساختار خاک',badge:null},
+    {id:8,name:'سم علف‌کش پاراکوات',category:'pesticide',icon:'🌾',price:110000,oldPrice:130000,desc:'کنترل علف‌های هرز',badge:'sale'},
+    {id:9,name:'کود پتاسیم بالا',category:'fertilizer',icon:'🍎',price:72000,oldPrice:null,desc:'افزایش کیفیت میوه',badge:null},
+    {id:10,name:'سم نماتدکش',category:'pesticide',icon:'🐛',price:165000,oldPrice:null,desc:'کنترل نماتدهای خاکزی',badge:null},
+    {id:11,name:'کود مایع ریزمغذی',category:'fertilizer',icon:'💧',price:38000,oldPrice:48000,desc:'حاوی روی، منگنز و مس',badge:'sale'},
+    {id:12,name:'سم حشره‌کش اسپینوساد',category:'pesticide',icon:'🪰',price:135000,oldPrice:null,desc:'کنترل تریپس و کرم‌ها',badge:'new'},
+];
+
+// ===== داده بیماری‌ها =====
+const DISEASE_DATA = [
+    {id:'powdery',name:'سفید پودری',category:'قارچی',icon:'🍄',level:'low',regions:28,desc:'لکه‌های سفید پودری روی برگ',treatment:'✅ قارچ‌کش گوگردی هر ۷-۱۰ روز'},
+    {id:'rust',name:'زنگ برگ',category:'قارچی',icon:'🍂',level:'mid',regions:35,desc:'لکه‌های نارنجی روی برگ',treatment:'✅ قارچ‌کش تریازول هر ۱۰ روز'},
+    {id:'fusarium',name:'پژمردگی فوزاریوم',category:'قارچی',icon:'🥀',level:'high',regions:22,desc:'پژمردگی عروقی و زردی',treatment:'✅ قارچ‌کش بنومیل + ضدعفونی خاک'},
+    {id:'gray_mold',name:'کیک خاکستری',category:'قارچی',icon:'🌫️',level:'mid',regions:18,desc:'پوسیدگی خاکستری میوه و برگ',treatment:'✅ قارچ‌کش ایپرودیون'},
+    {id:'black_spot',name:'لکه سیاه',category:'قارچی',icon:'⚫',level:'high',regions:31,desc:'لکه‌های گرد سیاه روی برگ',treatment:'✅ قارچ‌کش مانکوزب هر ۷-۱۰ روز'},
+    {id:'anthracnose',name:'آنتراکنوز',category:'قارچی',icon:'🍃',level:'mid',regions:16,desc:'لکه‌های قهوه‌ای روی برگ',treatment:'✅ قارچ‌کش آزوکسی‌استروبین'},
+    {id:'downy_mildew',name:'سفیدک داخلی',category:'قارچی',icon:'🌿',level:'mid',regions:14,desc:'لکه‌های زرد روی برگ',treatment:'✅ قارچ‌کش متالاکسیل'},
+    {id:'verticillium',name:'پژمردگی ورتیسیلیوم',category:'قارچی',icon:'🌾',level:'high',regions:12,desc:'پژمردگی یک طرفه',treatment:'✅ ضدعفونی خاک + تناوب'},
+    {id:'sclerotinia',name:'پوسیدگی اسکلروتینیایی',category:'قارچی',icon:'🧫',level:'high',regions:9,desc:'پوسیدگی نرم ساقه و میوه',treatment:'✅ قارچ‌کش تیوفانات‌متیل'},
+    {id:'bacterial_leaf_spot',name:'لکه باکتریایی برگ',category:'باکتریایی',icon:'🦠',level:'high',regions:13,desc:'لکه‌های آب‌سوخته',treatment:'✅ سموم مسی هر ۱۰ روز'},
+    {id:'fire_blight',name:'آتشک درختان میوه',category:'باکتریایی',icon:'🔥',level:'high',regions:8,desc:'خشکیدگی شاخه‌ها',treatment:'✅ حذف شاخه‌های آلوده + سموم مسی'},
+    {id:'crown_gall',name:'گال تاجی',category:'باکتریایی',icon:'🌳',level:'mid',regions:7,desc:'غده‌های توموری روی ریشه',treatment:'✅ حذف غده‌ها + ضدعفونی'},
+    {id:'mosaic',name:'موزاییک ویروسی',category:'ویروسی',icon:'🧩',level:'mid',regions:11,desc:'لکه‌های زرد و سبز موزاییکی',treatment:'✅ کنترل ناقلین + حذف گیاهان'},
+    {id:'leaf_curl',name:'پیچیدگی برگ',category:'ویروسی',icon:'🌀',level:'high',regions:9,desc:'پیچیدگی و بدشکلی برگ',treatment:'✅ مبارزه با ناقل'},
+    {id:'yellow_dwarf',name:'زردی کوتولگی',category:'ویروسی',icon:'💛',level:'high',regions:6,desc:'زردی و کوتولگی گیاه',treatment:'✅ ارقام مقاوم + کنترل ناقلین'},
+    {id:'aphid',name:'شته گیاهی',category:'آفت',icon:'🐜',level:'low',regions:42,desc:'حشرات مکنده شیره گیاهی',treatment:'✅ ایمیداکلوپرید هر ۱۴ روز'},
+    {id:'spider_mite',name:'کنه تارعنکبوتی',category:'آفت',icon:'🕷️',level:'mid',regions:25,desc:'لکه‌های سفید و تار',treatment:'✅ کنه‌کش آبامکتین + افزایش رطوبت'},
+    {id:'whitefly',name:'مگس سفید',category:'آفت',icon:'🪰',level:'mid',regions:19,desc:'حشرات سفید زیر برگ',treatment:'✅ پیریپروکسی‌فن'},
+    {id:'thrips',name:'تریپس',category:'آفت',icon:'🐛',level:'low',regions:15,desc:'نقره‌ای شدن برگ و گل',treatment:'✅ اسپینوساد هر ۱۰ روز'},
+    {id:'leaf_miner',name:'مگس برگ‌خوار',category:'آفت',icon:'🪰',level:'mid',regions:12,desc:'تونل‌های سفید داخل برگ',treatment:'✅ سایرمازین + حذف برگ‌ها'},
+    {id:'codling_moth',name:'کرم سیب',category:'آفت',icon:'🍎',level:'high',regions:10,desc:'کرم داخل میوه',treatment:'✅ متوکسی‌فنوزاید'},
+    {id:'chlorosis',name:'زردی (کلروز)',category:'فیزیولوژیک',icon:'💛',level:'low',regions:20,desc:'زردی برگ به دلیل کمبود عناصر',treatment:'✅ کودهای کلات آهن و روی'},
+    {id:'blossom_end_rot',name:'پوسیدگی گلگاه',category:'فیزیولوژیک',icon:'🍅',level:'mid',regions:13,desc:'لکه‌های قهوه‌ای انتهای میوه',treatment:'✅ محلول‌پاشی نیترات کلسیم'},
+    {id:'sun_scorch',name:'سوختگی آفتاب',category:'فیزیولوژیک',icon:'☀️',level:'low',regions:8,desc:'سوختگی برگ در آفتاب',treatment:'✅ سایه‌دهی + آبیاری منظم'}
+];
+
+// ===== متغیرها =====
+let cart = [];
+let orders = [];
+let currentFilter = 'all';
+let chartInstance = null;
+let mapInstance = null;
+let adminMessages = [];
+let messageIdCounter = 1;
+
+// ============================================================
+// توابع فروشگاه
+// ============================================================
+function renderProducts(filter='all'){
+    const grid=document.getElementById('productGrid');
+    const filtered=filter==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===filter);
+    grid.innerHTML=filtered.map(p=>`
+        <div class="product-card">
+            ${p.badge?`<span class="product-badge ${p.badge}">${p.badge==='new'?'جدید':'تخفیف'}</span>`:''}
+            <div class="product-image">${p.icon}</div>
+            <h3>${p.name}</h3>
+            <div class="product-desc">${p.desc}</div>
+            <div class="product-price">
+                <span class="current">${p.price.toLocaleString()} تومان</span>
+                ${p.oldPrice?`<span class="old">${p.oldPrice.toLocaleString()} تومان</span>`:''}
+            </div>
+            <button class="add-to-cart" onclick="addToCart(${p.id})"><i class="fas fa-cart-plus"></i> افزودن</button>
+        </div>
+    `).join('');
+}
+
+function filterProducts(filter){ renderProducts(filter); }
+
+function addToCart(id){
+    const p=PRODUCTS.find(x=>x.id===id);
+    if(!p)return;
+    const existing=cart.find(x=>x.id===id);
+    if(existing){ existing.qty++; }
+    else{ cart.push({...p,qty:1}); }
+    updateCartUI();
+    showToast(`✅ ${p.name} به سبد اضافه شد`);
+}
+
+function removeFromCart(id){ cart=cart.filter(x=>x.id!==id); updateCartUI(); }
+
+function updateQuantity(id,change){
+    const item=cart.find(x=>x.id===id);
+    if(!item)return;
+    item.qty+=change;
+    if(item.qty<=0){ cart=cart.filter(x=>x.id!==id); }
+    updateCartUI();
+}
+
+function updateCartUI(){
+    const container=document.getElementById('cartItems');
+    const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+    if(cart.length===0){
+        container.innerHTML='<p style="color:var(--text-secondary);text-align:center;padding:40px 0;">سبد خرید خالی است</p>';
+        document.getElementById('cartTotal').textContent='۰ تومان';
+        document.getElementById('checkoutBtn').disabled=true;
+        document.getElementById('cartBadge').textContent='0';
+        return;
+    }
+    container.innerHTML=cart.map(i=>`
+        <div class="cart-item">
+            <div class="item-icon">${i.icon}</div>
+            <div class="item-info">
+                <h4>${i.name}</h4>
+                <div class="item-price">${(i.price*i.qty).toLocaleString()} تومان</div>
+            </div>
+            <div class="item-qty">
+                <button onclick="updateQuantity(${i.id},-1)">−</button>
+                <span>${i.qty}</span>
+                <button onclick="updateQuantity(${i.id},1)">+</button>
+            </div>
+            <button class="remove-item" onclick="removeFromCart(${i.id})"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+    document.getElementById('cartTotal').textContent=total.toLocaleString()+' تومان';
+    document.getElementById('checkoutBtn').disabled=false;
+    document.getElementById('cartBadge').textContent=cart.reduce((s,i)=>s+i.qty,0);
+}
+
+function toggleCart(){
+    document.getElementById('cartSidebar').classList.toggle('open');
+    document.getElementById('cartOverlay').classList.toggle('show');
+}
+
+function checkout(){
+    if(cart.length===0){ showToast('⚠️ سبد خرید خالی است'); return; }
+    const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+    const order={id:Date.now(),items:[...cart],total:total,status:'pending',date:new Date().toLocaleDateString('fa-IR')};
+    orders.push(order);
+    localStorage.setItem('orders',JSON.stringify(orders));
+    showToast(`🛒 سفارش ثبت شد! مبلغ: ${total.toLocaleString()} تومان`);
+    cart=[]; updateCartUI(); toggleCart();
+    document.getElementById('statOrders').textContent=orders.length;
+    renderOrders();
+    setTimeout(()=>showToast('💳 درگاه پرداخت: زرین‌پال - پس از پرداخت تایید میشود'),1000);
+}
+
+function renderOrders(){
+    const container=document.getElementById('ordersContainer');
+    if(orders.length===0){
+        container.innerHTML='<p style="color:var(--text-secondary);text-align:center;padding:40px 0;">هنوز سفارشی ثبت نشده است</p>';
+        return;
+    }
+    container.innerHTML=orders.map((o,i)=>`
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-id">#${i+1} - ${o.date}</span>
+                <span class="order-status ${o.status}">${o.status==='pending'?'در انتظار پرداخت':o.status==='paid'?'پرداخت شده':o.status==='shipped'?'ارسال شده':'تحویل داده شده'}</span>
+            </div>
+            <div class="order-items">${o.items.map(it=>`${it.name} (${it.qty}×) - ${(it.price*it.qty).toLocaleString()} تومان`).join('<br>')}</div>
+            <div class="order-total">جمع: ${o.total.toLocaleString()} تومان</div>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// توابع بیماری‌ها
+// ============================================================
+function renderDiseases(filter='all'){
+    const container=document.getElementById('diseasesContainer');
+    container.innerHTML='';
+    let filtered=filter==='all'?DISEASE_DATA:DISEASE_DATA.filter(d=>d.level===filter);
+    const cats={'قارچی':{icon:'🍄',color:'#2d8f5e'},'باکتریایی':{icon:'🦠',color:'#e67e22'},'ویروسی':{icon:'🧬',color:'#8e44ad'},'آفت':{icon:'🐛',color:'#c0392b'},'فیزیولوژیک':{icon:'🧪',color:'#3498db'}};
+    const grouped={};
+    filtered.forEach(d=>{ if(!grouped[d.category]) grouped[d.category]=[]; grouped[d.category].push(d); });
+    Object.keys(cats).forEach(cat=>{
+        if(grouped[cat] && grouped[cat].length>0){
+            const section=document.createElement('div');
+            section.className='disease-category';
+            section.innerHTML=`
+                <div class="category-title"><i class="fas fa-tag" style="color:${cats[cat].color}"></i> ${cat} (${grouped[cat].length})</div>
+                <div class="disease-grid">
+                    ${grouped[cat].map(d=>`
+                        <div class="disease-card" onclick="toggleTreatment('${d.id}')">
+                            <div class="card-header"><span class="icon">${d.icon}</span><h4>${d.name}</h4></div>
+                            <div class="sub">${d.desc}</div>
+                            <div class="tags">
+                                <span class="level-badge level-${d.level}">${d.level==='low'?'🟢 کم':d.level==='mid'?'🟡 متوسط':'🔴 پرخطر'}</span>
+                                <span class="region-tag"><i class="fas fa-globe-asia"></i> ${d.regions} منطقه</span>
+                            </div>
+                            <div class="treatment-box" id="treatment_${d.id}">
+                                <strong>💊 درمان:</strong>
+                                <div class="treatment-item"><i class="fas fa-check-circle"></i><span>${d.treatment}</span></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(section);
+        }
+    });
+}
+
+function toggleTreatment(id){ document.getElementById('treatment_'+id)?.classList.toggle('show'); }
+
+function filterDiseases(filter,el){
+    currentFilter=filter;
+    document.querySelectorAll('.filter-tag').forEach(t=>t.classList.remove('active'));
+    if(el)el.classList.add('active');
+    renderDiseases(filter);
+    showToast(`🔍 فیلتر: ${el?el.textContent.trim():'همه'}`);
+}
+
+// ============================================================
+// توابع عمومی
+// ============================================================
+function enterSite(){
+    document.getElementById('welcomePage').classList.add('hidden');
+    document.getElementById('mainContent').style.display='block';
+    renderProducts('all');
+    renderDiseases('all');
+    initMap();
+    initChart();
+    updateAdminStats();
+    const saved=localStorage.getItem('orders');
+    if(saved){ orders=JSON.parse(saved); renderOrders(); document.getElementById('statOrders').textContent=orders.length; }
+    showToast('🌱 به SmartTree AI خوش آمدید!');
+    console.log('🌳 SmartTree AI v6.0 راه‌اندازی شد!');
+}
+
+function navigateTo(page,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page)?.classList.add('active');
+    document.querySelectorAll('.sidebar a[data-page]').forEach(a=>a.classList.remove('active'));
+    if(el)el.classList.add('active');
+    else document.querySelector(`.sidebar a[data-page="${page}"]`)?.classList.add('active');
+    if(page==='map' && mapInstance) setTimeout(()=>mapInstance.invalidateSize(),300);
+    if(page==='orders') renderOrders();
+}
+
+function initMap(){
+    if(mapInstance)return;
+    const el=document.getElementById('map');
+    if(!el)return;
+    mapInstance=L.map('map').setView([35.6892,51.3890],3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapInstance);
+    [
+        {lat:35.6892,lng:51.3890,label:'تهران - سفید پودری'},
+        {lat:30.0444,lng:31.2357,label:'قاهره - زنگ برگ'},
+        {lat:28.6139,lng:77.2090,label:'دهلی - فوزاریوم'},
+        {lat:39.9042,lng:116.4074,label:'پکن - لکه سیاه'},
+        {lat:40.7128,lng:-74.0060,label:'نیویورک - آنتراکنوز'},
+        {lat:51.5074,lng:-0.1278,label:'لندن - سفیدک داخلی'},
+        {lat:-33.8688,lng:151.2093,label:'سیدنی - پوسیدگی خاکستری'},
+        {lat:19.0760,lng:72.8777,label:'مومبای - شته'},
+        {lat:-23.5505,lng:-46.6333,label:'سائوپائولو - مگس برگ‌خوار'}
+    ].forEach(m=>{ L.marker([m.lat,m.lng]).addTo(mapInstance).bindPopup(`<b>${m.label}</b>`); });
+}
+
+function initChart(){
+    const ctx=document.getElementById('diseaseChart');
+    if(!ctx)return;
+    if(chartInstance)chartInstance.destroy();
+    const counts={};
+    DISEASE_DATA.forEach(d=>{ counts[d.category]=(counts[d.category]||0)+1; });
+    chartInstance=new Chart(ctx,{
+        type:'bar',
+        data:{ labels:Object.keys(counts), datasets:[{ label:'تعداد بیماری‌ها', data:Object.values(counts), backgroundColor:['#2d8f5e','#e67e22','#8e44ad','#c0392b','#3498db'], borderRadius:8 }] },
+        options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'}}, x:{grid:{display:false}} } }
+    });
+}
+
+function handleAIUpload(input){
+    const file=input.files[0];
+    if(!file)return;
+    const result=document.getElementById('aiResult');
+    result.classList.remove('show');
+    document.querySelector('.ai-status').textContent='⏳ در حال پردازش...';
+    document.querySelector('.ai-status').style.background='#f39c12';
+    showToast('🧠 AI در حال تحلیل...');
+    setTimeout(()=>{
+        const d=DISEASE_DATA[Math.floor(Math.random()*DISEASE_DATA.length)];
+        const conf=78+Math.floor(Math.random()*20);
+        document.getElementById('aiDisease').textContent=d.name;
+        document.getElementById('aiConfidence').textContent=conf+'%';
+        document.getElementById('aiConfidenceBar').style.width=conf+'%';
+        document.getElementById('aiTreatment').textContent=d.treatment;
+        result.classList.add('show');
+        document.querySelector('.ai-status').textContent='✅ تشخیص انجام شد';
+        document.querySelector('.ai-status').style.background='#27ae60';
+        addAdminMessage('سیستم',`تشخیص: ${d.name} (${conf}%)`);
+        showToast(`✅ تشخیص: ${d.name} (${conf}%)`);
+    },2000);
+}
+
+// ===== پنل مدیریت =====
+function addAdminMessage(user,msg){
+    const now=new Date();
+    adminMessages.push({ id:messageIdCounter++, user, message:msg, time:now.toLocaleTimeString('fa-IR')+' '+now.toLocaleDateString('fa-IR'), timestamp:now.getTime() });
+    renderAdminMessages();
+    updateAdminStats();
+}
+
+function renderAdminMessages(){
+    const tb=document.getElementById('adminMessagesBody');
+    if(adminMessages.length===0){ tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);padding:20px;">هنوز پیامی ثبت نشده است</td></tr>'; return; }
+    tb.innerHTML=adminMessages.map((m,i)=>`
+        <tr><td>${i+1}</td><td><strong>${m.user}</strong></td><td>${m.message}</td><td>${m.time}</td><td><button class="msg-delete" onclick="deleteAdminMessage(${m.id})">🗑️</button></td></tr>
+    `).join('');
+}
+
+function deleteAdminMessage(id){ adminMessages=adminMessages.filter(m=>m.id!==id); renderAdminMessages(); updateAdminStats(); showToast('🗑️ پیام حذف شد'); }
+
+function clearAllMessages(){ if(confirm('پاک کردن همه پیام‌ها؟')){ adminMessages=[]; renderAdminMessages(); updateAdminStats(); showToast('🗑️ همه پیام‌ها پاک شد'); } }
+
+function updateAdminStats(){
+    const now=new Date();
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+    const todayMsgs=adminMessages.filter(m=>m.timestamp>=today).length;
+    document.getElementById('adminTotalMsg').textContent=adminMessages.length;
+    document.getElementById('adminTodayMsg').textContent=todayMsgs;
+    document.getElementById('adminUsers').textContent=[...new Set(adminMessages.map(m=>m.user))].length||1;
+}
+
+// ===== چت‌بات =====
+const CHAT_RESPONSES={
+    'سلام':'🌱 سلام! چطور می‌توانم کمک کنم؟',
+    'خوبی':'🌱 من خوبم! شما چطورید؟',
+    'بیماری':'📚 لطفاً نام بیماری را بگویید.',
+    'سفید پودری':'🍄 سفیدک پودری با قارچ‌کش گوگردی درمان می‌شود.',
+    'زنگ برگ':'🍂 زنگ برگ با تریازول درمان می‌شود.',
+    'فوزاریوم':'🥀 فوزاریوم با بنومیل و ضدعفونی خاک کنترل می‌شود.',
+    'شته':'🐜 شته با ایمیداکلوپرید کنترل می‌شود. 🛒 <a href="#" onclick="navigateTo(\'shop\')" style="color:var(--primary);">خرید از فروشگاه</a>',
+    'کنه':'🕷️ کنه با آبامکتین درمان می‌شود. 🛒 <a href="#" onclick="navigateTo(\'shop\')" style="color:var(--primary);">خرید از فروشگاه</a>',
+    'درمان':'💊 برای درمان، تصویر برگ را آپلود کنید یا از فروشگاه سم بخرید.',
+    'تشخیص':'🤖 تصویر برگ را در بخش AI آپلود کنید.',
+    'مشاور':'📞 شماره مشاور: ۰۹۳۸۱۴۹۱۰۵۸',
+    'خرید':'🛒 به بخش فروشگاه بروید و محصول مورد نظر را انتخاب کنید.',
+    'سم':'🧪 فروشگاه ما انواع سموم دارد. 🛒 <a href="#" onclick="navigateTo(\'shop\')" style="color:var(--primary);">مشاهده محصولات</a>',
+    'کود':'🌱 فروشگاه ما انواع کود دارد. 🛒 <a href="#" onclick="navigateTo(\'shop\')" style="color:var(--primary);">مشاهده محصولات</a>',
+    'default':'🌱 سوال دقیق‌تری بپرسید یا با مشاور تماس بگیرید.\n📞 ۰۹۳۸۱۴۹۱۰۵۸'
+};
+
+function getChatResponse(input){
+    const lower=input.toLowerCase();
+    for(const [key,val] of Object.entries(CHAT_RESPONSES)){
+        if(lower.includes(key)) return val;
+    }
+    return CHAT_RESPONSES['default'];
+}
+
+function toggleChatbot(){
+    const win=document.getElementById('chatbotWindow');
+    win.classList.toggle('open');
+    if(win.classList.contains('open')) document.getElementById('chatInput').focus();
+}
+
+function openChatbot(){
+    const win=document.getElementById('chatbotWindow');
+    if(!win.classList.contains('open')) toggleChatbot();
+}
+
+function sendMessage(){
+    const input=document.getElementById('chatInput');
+    const msg=input.value.trim();
+    if(!msg)return;
+    const msgs=document.getElementById('chatMessages');
+    const typing=document.getElementById('typingIndicator');
+    const userMsg=document.createElement('div');
+    userMsg.className='msg user';
+    userMsg.innerHTML=msg+'<span class="time">همین الان</span>';
+    msgs.appendChild(userMsg);
+    input.value='';
+    msgs.scrollTop=msgs.scrollHeight;
+    addAdminMessage('کاربر',msg);
+    typing.classList.add('show');
+    msgs.scrollTop=msgs.scrollHeight;
+    setTimeout(()=>{
+        typing.classList.remove('show');
+        const botMsg=document.createElement('div');
+        botMsg.className='msg bot';
+        botMsg.innerHTML=getChatResponse(msg)+'<span class="time">همین الان</span>';
+        msgs.appendChild(botMsg);
+        msgs.scrollTop=msgs.scrollHeight;
+    },800+Math.random()*600);
+}
+
+// ===== دارک مود =====
+function toggleDark(){
+    document.body.classList.toggle('dark');
+    document.querySelector('.dark-toggle i').classList.toggle('fa-moon');
+    document.querySelector('.dark-toggle i').classList.toggle('fa-sun');
+    showToast('🌓 تم تغییر کرد');
+}
+
+// ===== توست =====
+function showToast(msg,isError=false){
+    const t=document.getElementById('toast');
+    t.textContent=msg;
+    t.className='toast show'+(isError?' error':'');
+    clearTimeout(t._timeout);
+    t._timeout=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ===== شروع =====
+console.log('🌳 SmartTree AI v6.0 - فروشگاه سموم');
+console.log('📋 ۲۴ بیماری در سیستم ثبت شد');
+console.log('🛒 ۱۲ محصول در فروشگاه موجود است');
+console.log('📞 مشاور: ۰۹۳۸۱۴۹۱۰۵۸');
+</script>
+
+</body>
+</html>
