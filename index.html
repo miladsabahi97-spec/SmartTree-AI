@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌳 SmartTree AI - پنل ادمین</title>
+    <title>🌳 SmartTree AI - نسخه نهایی پیشرفته</title>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -15,8 +15,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <!-- ===== ساختار یکپارچه ===== -->
     <style>
-        /* ===== همه استایل‌ها ===== */
         :root {
             --primary: #00b894;
             --primary-dark: #00876c;
@@ -47,11 +51,14 @@
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         @keyframes slideInRight { from{opacity:0;transform:translateX(50px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(0.95)} }
+        @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(0,184,148,0.3)} 50%{box-shadow:0 0 40px rgba(0,184,148,0.6)} }
         
         .animate-float { animation:float 3s ease-in-out infinite; }
         .animate-pulse { animation:pulse 2s ease-in-out infinite; }
         .animate-fade { animation:fadeInUp 0.5s ease-out; }
         .animate-slide { animation:slideInRight 0.5s ease-out; }
+        .animate-glow { animation:glow 2s ease-in-out infinite; }
 
         /* ===== صفحه خوش‌آمدگویی ===== */
         .welcome-page {
@@ -88,6 +95,43 @@
             border:1px solid rgba(255,255,255,0.2);
             font-size:14px;
         }
+
+        /* ===== ثبت‌نام و ورود ===== */
+        .auth-modal {
+            position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.6);
+            backdrop-filter:blur(10px);
+            display:none; align-items:center; justify-content:center;
+        }
+        .auth-modal.show { display:flex; }
+        .auth-box {
+            background:var(--card); padding:40px; border-radius:var(--radius);
+            box-shadow:var(--shadow); max-width:400px; width:100%;
+            backdrop-filter:blur(20px);
+            animation:fadeInUp 0.4s ease-out;
+        }
+        .auth-box .auth-icon { text-align:center; font-size:48px; margin-bottom:16px; }
+        .auth-box h2 { text-align:center; margin-bottom:4px; }
+        .auth-box .auth-sub { text-align:center; color:var(--text-secondary); font-size:14px; margin-bottom:24px; }
+        .auth-box .form-group { margin-bottom:16px; }
+        .auth-box .form-group label { display:block; margin-bottom:6px; font-weight:600; font-size:14px; }
+        .auth-box .form-group input {
+            width:100%; padding:12px; border-radius:12px;
+            border:2px solid var(--primary-light); background:var(--bg);
+            color:var(--text); outline:none; font-size:14px;
+            transition:var(--transition);
+        }
+        .auth-box .form-group input:focus { border-color:var(--primary); }
+        .auth-btn {
+            width:100%; padding:14px; border:none; border-radius:12px;
+            background:linear-gradient(135deg,var(--primary),var(--secondary));
+            color:white; font-size:16px; font-weight:700; cursor:pointer;
+            transition:var(--transition);
+        }
+        .auth-btn:hover { transform:scale(1.02); }
+        .auth-switch { text-align:center; margin-top:16px; font-size:14px; color:var(--text-secondary); }
+        .auth-switch a { color:var(--primary); cursor:pointer; font-weight:600; }
+        .auth-error { color:var(--danger); font-size:13px; margin-top:12px; text-align:center; display:none; }
 
         /* ===== هدر ===== */
         .app-header {
@@ -132,6 +176,17 @@
             transition:var(--transition);
         }
         .header-actions .dark-toggle:hover { transform:scale(1.1); background:var(--primary-light); }
+        .header-actions .user-btn {
+            background:var(--bg); border:none; width:40px; height:40px;
+            border-radius:50%; cursor:pointer; font-size:17px; color:var(--text);
+            transition:var(--transition); position:relative;
+        }
+        .header-actions .user-btn:hover { transform:scale(1.1); background:var(--primary-light); }
+        .header-actions .user-btn .user-badge {
+            position:absolute; bottom:-2px; right:-2px;
+            width:12px; height:12px; border-radius:50%;
+            background:var(--success); border:2px solid var(--card);
+        }
 
         /* ===== بدنه ===== */
         .app-body { display:flex; max-width:1600px; margin:0 auto; padding:20px 25px; gap:20px; }
@@ -212,6 +267,20 @@
             font-size:14px; cursor:pointer; outline:none;
         }
         .shop-header select:focus { border-color:var(--primary); }
+        .shop-header .search-box {
+            display:flex; align-items:center; gap:8px;
+            background:var(--bg); padding:6px 14px; border-radius:40px;
+            border:2px solid var(--primary-light);
+        }
+        .shop-header .search-box input {
+            border:none; background:none; outline:none;
+            color:var(--text); font-size:14px; width:180px;
+        }
+        .shop-header .search-box input::placeholder { color:var(--text-secondary); }
+        .shop-header .search-box button {
+            background:none; border:none; color:var(--text-secondary);
+            cursor:pointer; font-size:16px;
+        }
         
         .product-grid {
             display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
@@ -247,6 +316,9 @@
         .product-card .product-stock { font-size:11px; color:var(--text-secondary); margin-bottom:8px; }
         .product-card .product-stock .in-stock { color:var(--success); }
         .product-card .product-stock .out-of-stock { color:var(--danger); }
+        .product-card .product-rating {
+            color:var(--accent); font-size:12px; margin-bottom:6px;
+        }
         .product-card .add-to-cart {
             width:100%; padding:10px; border:none; border-radius:40px;
             background:linear-gradient(135deg,var(--primary),var(--secondary));
@@ -499,6 +571,62 @@
         .add-product-form input:focus, .add-product-form select:focus { border-color:var(--primary); }
         .add-product-form .form-actions { display:flex; gap:10px; margin-top:12px; }
 
+        /* ===== مقالات ===== */
+        .article-grid {
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+            gap:18px; margin-bottom:20px;
+        }
+        .article-card {
+            background:var(--card); border-radius:var(--radius);
+            padding:18px; box-shadow:var(--shadow);
+            border:1px solid rgba(255,255,255,0.1);
+            transition:var(--transition);
+        }
+        .article-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.12); }
+        .article-card .article-image {
+            width:100%; height:160px;
+            background:var(--primary-light);
+            border-radius:12px; display:flex;
+            align-items:center; justify-content:center;
+            font-size:48px; margin-bottom:10px;
+        }
+        .article-card h3 { font-size:17px; margin-bottom:6px; }
+        .article-card .article-excerpt { font-size:13px; color:var(--text-secondary); margin-bottom:10px; }
+        .article-card .article-meta {
+            display:flex; justify-content:space-between; font-size:12px;
+            color:var(--text-secondary);
+        }
+        .article-card .article-meta i { margin-left:4px; }
+        .article-card .read-more {
+            color:var(--primary); font-weight:700; cursor:pointer;
+            transition:var(--transition);
+        }
+        .article-card .read-more:hover { color:var(--primary-dark); }
+
+        /* ===== سوالات متداول ===== */
+        .faq-item {
+            background:var(--card); border-radius:var(--radius);
+            padding:16px; box-shadow:var(--shadow);
+            margin-bottom:12px;
+            border:1px solid rgba(255,255,255,0.1);
+            cursor:pointer;
+            transition:var(--transition);
+        }
+        .faq-item:hover { transform:translateX(4px); }
+        .faq-item .faq-question {
+            display:flex; justify-content:space-between; align-items:center;
+            font-weight:700; font-size:15px;
+        }
+        .faq-item .faq-question i { transition:var(--transition); }
+        .faq-item .faq-answer {
+            margin-top:10px; padding-top:10px;
+            border-top:1px solid var(--bg);
+            display:none; font-size:14px;
+            color:var(--text-secondary);
+            line-height:1.8;
+        }
+        .faq-item .faq-answer.show { display:block; animation:fadeInUp 0.3s ease-out; }
+
         /* ===== مدیریت پیام‌ها ===== */
         .admin-panel {
             background:var(--card); border-radius:var(--radius);
@@ -619,6 +747,24 @@
             border-top:1px solid var(--primary-light); margin-top:10px;
         }
 
+        /* ===== بارگذاری ===== */
+        .upload-progress {
+            display:none; margin-top:12px;
+            background:var(--bg); border-radius:10px;
+            overflow:hidden; height:8px;
+        }
+        .upload-progress.show { display:block; }
+        .upload-progress .progress-bar {
+            height:100%; width:0%;
+            background:linear-gradient(90deg,var(--primary),var(--secondary));
+            transition:width 0.3s;
+            border-radius:10px;
+        }
+        .upload-progress .progress-text {
+            font-size:12px; color:var(--text-secondary);
+            margin-top:4px; text-align:center;
+        }
+
         /* ===== ریسپانسیو ===== */
         @media(max-width:1024px){
             .app-body{flex-direction:column;padding:16px}
@@ -637,6 +783,8 @@
             .welcome-content p{font-size:16px}
             .welcome-content .logo-icon{font-size:50px}
             .dashboard-stats{grid-template-columns:1fr 1fr}
+            .shop-header .search-box input{width:100px}
+            .article-grid{grid-template-columns:1fr}
         }
         @media(max-width:480px){
             .product-grid{grid-template-columns:1fr}
@@ -646,6 +794,7 @@
             .shop-header{flex-direction:column;align-items:stretch}
             .welcome-content h1{font-size:24px}
             .dashboard-stats{grid-template-columns:1fr}
+            .shop-header .search-box input{width:100%}
         }
     </style>
 </head>
@@ -669,6 +818,38 @@
     </div>
 </div>
 
+<!-- ===== ثبت‌نام و ورود ===== -->
+<div class="auth-modal" id="authModal">
+    <div class="auth-box">
+        <div class="auth-icon">👤</div>
+        <h2 id="authTitle">ورود به حساب کاربری</h2>
+        <p class="auth-sub" id="authSub">برای استفاده از امکانات ویژه وارد شوید</p>
+        <div id="authForm">
+            <div class="form-group" id="nameGroup" style="display:none;">
+                <label>نام کامل</label>
+                <input type="text" id="authName" placeholder="نام خود را وارد کنید">
+            </div>
+            <div class="form-group">
+                <label>ایمیل</label>
+                <input type="email" id="authEmail" placeholder="ایمیل خود را وارد کنید">
+            </div>
+            <div class="form-group">
+                <label>رمز عبور</label>
+                <input type="password" id="authPassword" placeholder="رمز عبور را وارد کنید">
+            </div>
+            <div class="form-group" id="confirmGroup" style="display:none;">
+                <label>تکرار رمز عبور</label>
+                <input type="password" id="authConfirm" placeholder="رمز عبور را تکرار کنید">
+            </div>
+        </div>
+        <button class="auth-btn" id="authBtn" onclick="handleAuth()">ورود</button>
+        <div class="auth-error" id="authError"></div>
+        <div class="auth-switch" id="authSwitch">
+            حساب کاربری ندارید؟ <a onclick="switchAuth()">ثبت‌نام کنید</a>
+        </div>
+    </div>
+</div>
+
 <!-- ===== سایت اصلی ===== -->
 <div id="mainContent" style="display:none;">
 
@@ -687,6 +868,10 @@
                 <i class="fas fa-shopping-cart"></i> سبد خرید
                 <span class="cart-badge" id="cartBadge">0</span>
             </button>
+            <button class="user-btn" onclick="toggleAuth()" title="حساب کاربری">
+                <i class="fas fa-user"></i>
+                <span class="user-badge"></span>
+            </button>
             <button class="dark-toggle" onclick="toggleDark()"><i class="fas fa-moon"></i></button>
         </div>
     </header>
@@ -702,8 +887,10 @@
             <a data-page="weeds" onclick="navigateTo('weeds',this)"><i class="fas fa-seedling"></i> تشخیص علف هرز</a>
             <a data-page="diseases" onclick="navigateTo('diseases',this)"><i class="fas fa-disease"></i> بیماری‌ها</a>
             <a data-page="map" onclick="navigateTo('map',this)"><i class="fas fa-globe-americas"></i> نقشه</a>
+            <a data-page="articles" onclick="navigateTo('articles',this)"><i class="fas fa-newspaper"></i> مقالات</a>
+            <a data-page="faq" onclick="navigateTo('faq',this)"><i class="fas fa-question-circle"></i> سوالات متداول</a>
             <a data-page="orders" onclick="navigateTo('orders',this)"><i class="fas fa-truck"></i> سفارشات</a>
-            <a data-page="dashboard" onclick="navigateTo('dashboard',this)"><i class="fas fa-chart-pie"></i> پنل ادمین</a>
+            <a data-page="dashboard" onclick="navigateTo('dashboard',this)"><i class="fas fa-user-cog"></i> پنل ادمین</a>
             <a data-page="admin" onclick="navigateTo('admin',this)"><i class="fas fa-user-shield"></i> مدیریت پیام‌ها</a>
             <a onclick="openChatbot()"><i class="fas fa-comment-dots"></i> چت‌بات</a>
             <div class="premium-box">
@@ -729,7 +916,7 @@
                     <div class="disease-card" onclick="navigateTo('shop')"><div class="card-header"><span class="icon">🛒</span><h4>خرید سموم</h4></div><div class="sub">محصولات تخصصی برای درمان گیاهان</div></div>
                     <div class="disease-card" onclick="navigateTo('ai')"><div class="card-header"><span class="icon">🤖</span><h4>تشخیص بیماری</h4></div><div class="sub">تصویر برگ را آپلود کنید</div></div>
                     <div class="disease-card" onclick="navigateTo('weeds')"><div class="card-header"><span class="icon">🌾</span><h4>تشخیص علف هرز</h4></div><div class="sub">تصویر علف هرز را آپلود کنید</div></div>
-                    <div class="disease-card" onclick="navigateTo('diseases')"><div class="card-header"><span class="icon">🌿</span><h4>۳۰+ بیماری</h4></div><div class="sub">مشاهده بیماری‌ها با درمان</div></div>
+                    <div class="disease-card" onclick="navigateTo('articles')"><div class="card-header"><span class="icon">📰</span><h4>مقالات آموزشی</h4></div><div class="sub">مطالعه مقالات تخصصی</div></div>
                 </div>
             </div>
 
@@ -737,12 +924,18 @@
             <div class="page page-shop" id="page-shop">
                 <div class="shop-header">
                     <h2><i class="fas fa-store"></i> 🛒 فروشگاه سموم و کود</h2>
-                    <select id="shopFilter" onchange="filterProducts(this.value)">
-                        <option value="all">همه محصولات</option>
-                        <option value="pesticide">سموم</option>
-                        <option value="fertilizer">کودها</option>
-                        <option value="other">سایر محصولات</option>
-                    </select>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <div class="search-box">
+                            <input type="text" id="productSearch" placeholder="جستجوی محصول..." oninput="filterProductsBySearch()">
+                            <button onclick="filterProductsBySearch()"><i class="fas fa-search"></i></button>
+                        </div>
+                        <select id="shopFilter" onchange="filterProducts(this.value)">
+                            <option value="all">همه محصولات</option>
+                            <option value="pesticide">سموم</option>
+                            <option value="fertilizer">کودها</option>
+                            <option value="other">سایر محصولات</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="product-grid" id="productGrid"></div>
             </div>
@@ -758,14 +951,24 @@
                         <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:var(--primary);margin-bottom:10px;"></i>
                         <p><strong>تصویر برگ گیاه را آپلود کنید</strong></p>
                         <p style="font-size:12px;">پشتیبانی از JPG, PNG, WEBP</p>
-                        <input type="file" id="aiFileInput" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;" onchange="handleAIUpload(this)">
+                        <p style="font-size:11px;color:var(--text-secondary);">📸 یا از دوربین استفاده کنید</p>
+                        <input type="file" id="aiFileInput" accept="image/*" capture="environment" style="position:absolute;inset:0;opacity:0;cursor:pointer;" onchange="handleAIUpload(this)">
+                    </div>
+                    <div class="upload-progress" id="aiProgress">
+                        <div class="progress-bar" id="aiProgressBar"></div>
+                        <div class="progress-text" id="aiProgressText">در حال آپلود...</div>
                     </div>
                     <div class="ai-result" id="aiResult" style="margin-top:14px;padding:14px;border-radius:var(--radius);background:var(--primary-light);display:none;">
                         <h4>🧬 نتیجه تشخیص:</h4>
                         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span>بیماری</span> <strong id="aiDisease">-</strong></div>
+                        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span>شدت</span> <strong id="aiSeverity">-</strong></div>
                         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);"><span>دقت</span> <strong id="aiConfidence">-</strong></div>
                         <div style="height:6px;background:#ddd;border-radius:10px;overflow:hidden;margin-top:4px;"><div class="fill" id="aiConfidenceBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.8s;"></div></div>
                         <div style="display:flex;justify-content:space-between;padding:5px 0;margin-top:5px;"><span>درمان</span> <span id="aiTreatment" style="font-size:12px;">-</span></div>
+                        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <button onclick="showToast('📄 گزارش PDF در حال آماده‌سازی...')" style="background:var(--info);color:white;border:none;padding:6px 16px;border-radius:40px;cursor:pointer;">📄 دانلود PDF</button>
+                            <button onclick="navigateTo('shop')" style="background:var(--primary);color:white;border:none;padding:6px 16px;border-radius:40px;cursor:pointer;">🛒 خرید سموم</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -791,6 +994,10 @@
                         <p style="font-size:12px;">پشتیبانی از JPG, PNG, WEBP</p>
                         <input type="file" id="weedFileInput" accept="image/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;" onchange="handleWeedAIUpload(this)">
                     </div>
+                    <div class="upload-progress" id="weedProgress">
+                        <div class="progress-bar" id="weedProgressBar"></div>
+                        <div class="progress-text" id="weedProgressText">در حال آپلود...</div>
+                    </div>
                     <div class="ai-result" id="weedResult" style="margin-top:14px;padding:14px;border-radius:var(--radius);background:var(--primary-light);display:none;">
                         <h4>🧬 نتیجه تشخیص علف هرز:</h4>
                         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
@@ -811,10 +1018,12 @@
                         <div style="display:flex;justify-content:space-between;padding:5px 0;margin-top:5px;">
                             <span>سموم پیشنهادی</span> <span id="weedPesticides" style="font-size:12px;">-</span>
                         </div>
+                        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <button onclick="navigateTo('shop')" style="background:var(--primary);color:white;border:none;padding:6px 16px;border-radius:40px;cursor:pointer;">🛒 خرید سموم</button>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- فیلتر علف‌های هرز -->
                 <div class="filter-bar">
                     <label><i class="fas fa-sliders-h"></i> فیلتر:</label>
                     <span class="filter-tag active" data-filter="all" onclick="filterWeeds('all',this)">همه</span>
@@ -842,6 +1051,22 @@
             <!-- ===== صفحه نقشه ===== -->
             <div class="page page-map" id="page-map">
                 <div class="map-box"><h3><i class="fas fa-map-marked-alt" style="color:var(--primary);"></i> 🌍 نقشه جهانی</h3><div id="map"></div></div>
+            </div>
+
+            <!-- ===== صفحه مقالات ===== -->
+            <div class="page page-articles" id="page-articles">
+                <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-newspaper" style="color:var(--primary);"></i> 📰 مقالات آموزشی
+                </h2>
+                <div class="article-grid" id="articleGrid"></div>
+            </div>
+
+            <!-- ===== صفحه سوالات متداول ===== -->
+            <div class="page page-faq" id="page-faq">
+                <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-question-circle" style="color:var(--primary);"></i> ❓ سوالات متداول
+                </h2>
+                <div id="faqContainer"></div>
             </div>
 
             <!-- ===== صفحه سفارشات ===== -->
@@ -907,7 +1132,7 @@
 
                     <div class="dashboard-table-wrap">
                         <table class="dashboard-table">
-                            <thead><tr><th>#</th><th>آیکون</th><th>نام</th><th>دسته</th><th>قیمت</th><th>موجودی</th><th>عملیات</th></tr></thead>
+                            <thead><tr><th>#</th><th>آیکون</th><th>نام</th><th>دسته</th><th>قیمت</th><th>موجودی</th><th>امتیاز</th><th>عملیات</th></tr></thead>
                             <tbody id="dashboardProductsBody"></tbody>
                         </table>
                     </div>
@@ -947,8 +1172,8 @@
 
             <!-- ===== فوتر ===== -->
             <footer class="app-footer">
-                <i class="fas fa-leaf" style="color:var(--primary);"></i> SmartTree AI v8.0 · پنل ادمین · ۲۰۲۶
-                <br><span style="font-size:11px;">📞 مشاور: ۰۹۳۸۱۴۹۱۰۵۸</span>
+                <i class="fas fa-leaf" style="color:var(--primary);"></i> SmartTree AI v9.0 · پنل ادمین · ۲۰۲۶
+                <br><span style="font-size:11px;">📞 مشاور: ۰۹۳۸۱۴۹۱۰۵۸ | 📧 info@smarttree.ai</span>
             </footer>
 
         </div>
@@ -990,24 +1215,24 @@
 // ۱. داده‌های محصولات
 // ============================================================
 const PRODUCTS = [
-    {id:1,name:'قارچ‌کش کاپتان ۸۰%',category:'pesticide',icon:'🧪',price:85000,oldPrice:95000,desc:'کنترل سفیدک پودری و لکه سیاه',badge:'hot',stock:45},
-    {id:2,name:'حشره‌کش ایمیداکلوپرید',category:'pesticide',icon:'🐜',price:120000,oldPrice:null,desc:'کنترل شته، مگس سفید و زنجرک',badge:'sale',stock:30},
-    {id:3,name:'کود کامل NPK 20-20-20',category:'fertilizer',icon:'🌱',price:65000,oldPrice:75000,desc:'کود کامل برای رشد و گلدهی',badge:null,stock:80},
-    {id:4,name:'کنه‌کش آبامکتین ۱.۸%',category:'pesticide',icon:'🕷️',price:98000,oldPrice:null,desc:'کنترل کنه تارعنکبوتی و مینوز',badge:null,stock:25},
-    {id:5,name:'کود آهن کلات ۶%',category:'fertilizer',icon:'💚',price:45000,oldPrice:55000,desc:'رفع زردی برگ و کمبود آهن',badge:'sale',stock:60},
-    {id:6,name:'باکتری‌کش استرپتومایسین',category:'pesticide',icon:'🦠',price:150000,oldPrice:null,desc:'کنترل بیماری‌های باکتریایی',badge:'new',stock:15},
-    {id:7,name:'کود هیومیک اسید مایع',category:'fertilizer',icon:'🌿',price:55000,oldPrice:null,desc:'بهبود ساختار خاک و جذب عناصر',badge:null,stock:50},
-    {id:8,name:'علف‌کش پاراکوات ۲۰%',category:'pesticide',icon:'🌾',price:110000,oldPrice:130000,desc:'کنترل علف‌های هرز باریک برگ',badge:'sale',stock:20},
-    {id:9,name:'کود پتاسیم بالا ۵۰%',category:'fertilizer',icon:'🍎',price:72000,oldPrice:null,desc:'افزایش کیفیت و اندازه میوه',badge:null,stock:40},
-    {id:10,name:'سم نماتدکش فلوپیرام',category:'pesticide',icon:'🐛',price:165000,oldPrice:null,desc:'کنترل نماتدهای خاکزی',badge:null,stock:12},
-    {id:11,name:'کود مایع ریزمغذی',category:'fertilizer',icon:'💧',price:38000,oldPrice:48000,desc:'حاوی روی، منگنز، مس و بر',badge:'sale',stock:70},
-    {id:12,name:'حشره‌کش اسپینوساد ۴۸%',category:'pesticide',icon:'🪰',price:135000,oldPrice:null,desc:'کنترل تریپس، کرم برگ‌خوار',badge:'new',stock:18},
-    {id:13,name:'کود کلسیم بور مایع',category:'fertilizer',icon:'🥬',price:48000,oldPrice:null,desc:'رفع پوسیدگی گلگاه و افزایش کیفیت',badge:null,stock:35},
-    {id:14,name:'سم قارچ‌کش مانکوزب',category:'pesticide',icon:'🍄',price:78000,oldPrice:null,desc:'کنترل بیماری‌های قارچی عمومی',badge:null,stock:42},
-    {id:15,name:'کود اوره ۴۶%',category:'fertilizer',icon:'🌾',price:42000,oldPrice:52000,desc:'تامین نیتروژن مورد نیاز گیاه',badge:'sale',stock:100},
-    {id:16,name:'سم حشره‌کش دلتامترین',category:'pesticide',icon:'🐞',price:95000,oldPrice:null,desc:'کنترل آفات مکنده و جونده',badge:null,stock:28},
-    {id:17,name:'کود فسفر بالا ۵۰%',category:'fertilizer',icon:'🌸',price:68000,oldPrice:null,desc:'افزایش گلدهی و ریشه‌دهی',badge:null,stock:33},
-    {id:18,name:'سم کنه‌کش اسپیرودیکلوفن',category:'pesticide',icon:'🕷️',price:145000,oldPrice:null,desc:'کنترل کنه‌های مقاوم',badge:'new',stock:10},
+    {id:1,name:'قارچ‌کش کاپتان ۸۰%',category:'pesticide',icon:'🧪',price:85000,oldPrice:95000,desc:'کنترل سفیدک پودری و لکه سیاه',badge:'hot',stock:45,rating:4.8,reviews:23},
+    {id:2,name:'حشره‌کش ایمیداکلوپرید',category:'pesticide',icon:'🐜',price:120000,oldPrice:null,desc:'کنترل شته، مگس سفید و زنجرک',badge:'sale',stock:30,rating:4.5,reviews:18},
+    {id:3,name:'کود کامل NPK 20-20-20',category:'fertilizer',icon:'🌱',price:65000,oldPrice:75000,desc:'کود کامل برای رشد و گلدهی',badge:null,stock:80,rating:4.9,reviews:42},
+    {id:4,name:'کنه‌کش آبامکتین ۱.۸%',category:'pesticide',icon:'🕷️',price:98000,oldPrice:null,desc:'کنترل کنه تارعنکبوتی و مینوز',badge:null,stock:25,rating:4.6,reviews:15},
+    {id:5,name:'کود آهن کلات ۶%',category:'fertilizer',icon:'💚',price:45000,oldPrice:55000,desc:'رفع زردی برگ و کمبود آهن',badge:'sale',stock:60,rating:4.7,reviews:31},
+    {id:6,name:'باکتری‌کش استرپتومایسین',category:'pesticide',icon:'🦠',price:150000,oldPrice:null,desc:'کنترل بیماری‌های باکتریایی',badge:'new',stock:15,rating:4.3,reviews:9},
+    {id:7,name:'کود هیومیک اسید مایع',category:'fertilizer',icon:'🌿',price:55000,oldPrice:null,desc:'بهبود ساختار خاک و جذب عناصر',badge:null,stock:50,rating:4.4,reviews:27},
+    {id:8,name:'علف‌کش پاراکوات ۲۰%',category:'pesticide',icon:'🌾',price:110000,oldPrice:130000,desc:'کنترل علف‌های هرز باریک برگ',badge:'sale',stock:20,rating:4.2,reviews:12},
+    {id:9,name:'کود پتاسیم بالا ۵۰%',category:'fertilizer',icon:'🍎',price:72000,oldPrice:null,desc:'افزایش کیفیت و اندازه میوه',badge:null,stock:40,rating:4.8,reviews:34},
+    {id:10,name:'سم نماتدکش فلوپیرام',category:'pesticide',icon:'🐛',price:165000,oldPrice:null,desc:'کنترل نماتدهای خاکزی',badge:null,stock:12,rating:4.1,reviews:7},
+    {id:11,name:'کود مایع ریزمغذی',category:'fertilizer',icon:'💧',price:38000,oldPrice:48000,desc:'حاوی روی، منگنز، مس و بر',badge:'sale',stock:70,rating:4.6,reviews:45},
+    {id:12,name:'حشره‌کش اسپینوساد ۴۸%',category:'pesticide',icon:'🪰',price:135000,oldPrice:null,desc:'کنترل تریپس، کرم برگ‌خوار',badge:'new',stock:18,rating:4.5,reviews:14},
+    {id:13,name:'کود کلسیم بور مایع',category:'fertilizer',icon:'🥬',price:48000,oldPrice:null,desc:'رفع پوسیدگی گلگاه و افزایش کیفیت',badge:null,stock:35,rating:4.3,reviews:22},
+    {id:14,name:'سم قارچ‌کش مانکوزب',category:'pesticide',icon:'🍄',price:78000,oldPrice:null,desc:'کنترل بیماری‌های قارچی عمومی',badge:null,stock:42,rating:4.4,reviews:19},
+    {id:15,name:'کود اوره ۴۶%',category:'fertilizer',icon:'🌾',price:42000,oldPrice:52000,desc:'تامین نیتروژن مورد نیاز گیاه',badge:'sale',stock:100,rating:4.7,reviews:56},
+    {id:16,name:'سم حشره‌کش دلتامترین',category:'pesticide',icon:'🐞',price:95000,oldPrice:null,desc:'کنترل آفات مکنده و جونده',badge:null,stock:28,rating:4.2,reviews:11},
+    {id:17,name:'کود فسفر بالا ۵۰%',category:'fertilizer',icon:'🌸',price:68000,oldPrice:null,desc:'افزایش گلدهی و ریشه‌دهی',badge:null,stock:33,rating:4.6,reviews:28},
+    {id:18,name:'سم کنه‌کش اسپیرودیکلوفن',category:'pesticide',icon:'🕷️',price:145000,oldPrice:null,desc:'کنترل کنه‌های مقاوم',badge:'new',stock:10,rating:4.0,reviews:6},
 ];
 
 // ============================================================
@@ -1066,7 +1291,79 @@ const WEED_DATA = [
 ];
 
 // ============================================================
-// ۴. متغیرها
+// ۴. داده‌های مقالات
+// ============================================================
+const ARTICLES = [
+    {
+        id:1,
+        title:'راهنمای کامل تشخیص و درمان سفیدک پودری',
+        excerpt:'سفیدک پودری یکی از شایع‌ترین بیماری‌های قارچی است که روی بسیاری از گیاهان اثر می‌گذارد...',
+        icon:'🍄',
+        date:'۲۰۲۶-۰۱-۱۵',
+        category:'بیماری‌ها',
+        readTime:'۵ دقیقه'
+    },
+    {
+        id:2,
+        title:'مبارزه بیولوژیک با آفات گیاهی',
+        excerpt:'استفاده از دشمنان طبیعی آفات یکی از روش‌های موثر و سازگار با محیط زیست است...',
+        icon:'🐞',
+        date:'۲۰۲۶-۰۱-۱۲',
+        category:'آفات',
+        readTime:'۷ دقیقه'
+    },
+    {
+        id:3,
+        title:'بهترین کودها برای افزایش محصول',
+        excerpt:'انتخاب کود مناسب بسته به نوع گیاه و خاک، نقش مهمی در افزایش محصول دارد...',
+        icon:'🌱',
+        date:'۲۰۲۶-۰۱-۱۰',
+        category:'کودها',
+        readTime:'۴ دقیقه'
+    },
+    {
+        id:4,
+        title:'شناسایی و مبارزه با علف‌های هرز',
+        excerpt:'علف‌های هرز رقبای جدی گیاهان اصلی هستند و باید به موقع کنترل شوند...',
+        icon:'🌾',
+        date:'۲۰۲۶-۰۱-۰۸',
+        category:'علف‌های هرز',
+        readTime:'۶ دقیقه'
+    },
+    {
+        id:5,
+        title:'تاثیر هوش مصنوعی در کشاورزی مدرن',
+        excerpt:'هوش مصنوعی می‌تواند به کشاورزان در تشخیص بیماری‌ها و افزایش محصول کمک کند...',
+        icon:'🤖',
+        date:'۲۰۲۶-۰۱-۰۵',
+        category:'تکنولوژی',
+        readTime:'۸ دقیقه'
+    },
+    {
+        id:6,
+        title:'روش‌های طبیعی کنترل آفات',
+        excerpt:'استفاده از روش‌های طبیعی مانند روغن چریش، صابون حشره‌کش و... برای کنترل آفات...',
+        icon:'🌿',
+        date:'۲۰۲۶-۰۱-۰۳',
+        category:'آفات',
+        readTime:'۵ دقیقه'
+    },
+];
+
+// ============================================================
+// ۵. داده‌های سوالات متداول
+// ============================================================
+const FAQ_DATA = [
+    {q:'چگونه از هوش مصنوعی برای تشخیص بیماری استفاده کنم؟',a:'کافی است تصویر برگ گیاه را در بخش تشخیص بیماری آپلود کنید. هوش مصنوعی ما بیماری را تشخیص داده و درمان مناسب را پیشنهاد می‌دهد.'},
+    {q:'آیا تشخیص بیماری با هوش مصنوعی رایگان است؟',a:'بله، تشخیص بیماری با هوش مصنوعی در SmartTree AI کاملاً رایگان است.'},
+    {q:'چگونه می‌توانم محصولات را خریداری کنم؟',a:'محصولات مورد نظر خود را به سبد خرید اضافه کنید و سپس از طریق درگاه پرداخت زرین‌پال اقدام به خرید کنید.'},
+    {q:'آیا امکان پیگیری سفارش وجود دارد؟',a:'بله، پس از ثبت سفارش می‌توانید وضعیت آن را در بخش سفارشات مشاهده کنید.'},
+    {q:'چگونه می‌توانم با مشاور تماس بگیرم؟',a:'شماره تماس مشاور ۰۹۳۸۱۴۹۱۰۵۸ در هدر سایت درج شده است.'},
+    {q:'آیا مقالات آموزشی رایگان هستند؟',a:'بله، همه مقالات آموزشی در SmartTree AI رایگان و قابل دسترسی هستند.'},
+];
+
+// ============================================================
+// ۶. متغیرها
 // ============================================================
 let cart = [];
 let orders = [];
@@ -1078,19 +1375,143 @@ let topProductsChartInstance = null;
 let mapInstance = null;
 let adminMessages = [];
 let messageIdCounter = 1;
+let isAuthMode = 'login';
+let currentUser = null;
 
 // ============================================================
-// ۵. توابع فروشگاه
+// ۷. توابع ثبت‌نام و ورود
 // ============================================================
-function renderProducts(filter='all'){
+function toggleAuth(mode){
+    isAuthMode = mode || 'login';
+    const modal = document.getElementById('authModal');
+    const title = document.getElementById('authTitle');
+    const sub = document.getElementById('authSub');
+    const btn = document.getElementById('authBtn');
+    const nameGroup = document.getElementById('nameGroup');
+    const confirmGroup = document.getElementById('confirmGroup');
+    const switchText = document.getElementById('authSwitch');
+    const error = document.getElementById('authError');
+    
+    error.style.display = 'none';
+    
+    if(isAuthMode === 'login'){
+        title.textContent = 'ورود به حساب کاربری';
+        sub.textContent = 'برای استفاده از امکانات ویژه وارد شوید';
+        btn.textContent = 'ورود';
+        nameGroup.style.display = 'none';
+        confirmGroup.style.display = 'none';
+        switchText.innerHTML = 'حساب کاربری ندارید؟ <a onclick="switchAuth()">ثبت‌نام کنید</a>';
+    } else {
+        title.textContent = 'ثبت‌نام کاربری';
+        sub.textContent = 'برای استفاده از امکانات ویژه ثبت‌نام کنید';
+        btn.textContent = 'ثبت‌نام';
+        nameGroup.style.display = 'block';
+        confirmGroup.style.display = 'block';
+        switchText.innerHTML = 'حساب کاربری دارید؟ <a onclick="switchAuth()">وارد شوید</a>';
+    }
+    
+    modal.classList.toggle('show');
+}
+
+function switchAuth(){
+    isAuthMode = isAuthMode === 'login' ? 'register' : 'login';
+    toggleAuth(isAuthMode);
+}
+
+function handleAuth(){
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value.trim();
+    const error = document.getElementById('authError');
+    
+    if(!email || !password){
+        error.textContent = '⚠️ لطفاً همه فیلدها را پر کنید';
+        error.style.display = 'block';
+        return;
+    }
+    
+    if(isAuthMode === 'register'){
+        const name = document.getElementById('authName').value.trim();
+        const confirm = document.getElementById('authConfirm').value.trim();
+        if(!name){
+            error.textContent = '⚠️ لطفاً نام خود را وارد کنید';
+            error.style.display = 'block';
+            return;
+        }
+        if(password !== confirm){
+            error.textContent = '⚠️ رمز عبور و تکرار آن مطابقت ندارند';
+            error.style.display = 'block';
+            return;
+        }
+        // ذخیره کاربر
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        if(users.find(u => u.email === email)){
+            error.textContent = '⚠️ این ایمیل قبلاً ثبت شده است';
+            error.style.display = 'block';
+            return;
+        }
+        users.push({email, password, name, date:new Date().toISOString()});
+        localStorage.setItem('users', JSON.stringify(users));
+        showToast('✅ ثبت‌نام با موفقیت انجام شد! لطفاً وارد شوید.');
+        switchAuth();
+        return;
+    }
+    
+    // ورود
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if(user){
+        currentUser = user;
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        document.getElementById('authModal').classList.remove('show');
+        showToast(`👋 خوش آمدید ${user.name || 'کاربر عزیز'}`);
+        updateUserUI();
+    } else {
+        error.textContent = '❌ ایمیل یا رمز عبور اشتباه است';
+        error.style.display = 'block';
+    }
+}
+
+function updateUserUI(){
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const userBtn = document.querySelector('.user-btn');
+    if(user){
+        userBtn.innerHTML = `<i class="fas fa-user-check"></i>`;
+        userBtn.title = `${user.name || 'کاربر'} - خروج`;
+        userBtn.onclick = logout;
+    } else {
+        userBtn.innerHTML = `<i class="fas fa-user"></i>`;
+        userBtn.title = 'ورود / ثبت‌نام';
+        userBtn.onclick = () => toggleAuth('login');
+    }
+}
+
+function logout(){
+    if(confirm('آیا از خروج از حساب کاربری اطمینان دارید؟')){
+        localStorage.removeItem('currentUser');
+        currentUser = null;
+        updateUserUI();
+        showToast('🔒 خروج با موفقیت انجام شد');
+    }
+}
+
+// ============================================================
+// ۸. توابع فروشگاه
+// ============================================================
+function renderProducts(filter='all', search=''){
     const grid=document.getElementById('productGrid');
-    const filtered=filter==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===filter);
+    let filtered=filter==='all'?PRODUCTS:PRODUCTS.filter(p=>p.category===filter);
+    if(search){
+        filtered = filtered.filter(p => p.name.includes(search) || p.desc.includes(search));
+    }
     grid.innerHTML=filtered.map(p=>`
-        <div class="product-card">
+        <div class="product-card" data-aos="fade-up">
             ${p.badge?`<span class="product-badge ${p.badge}">${p.badge==='new'?'✨ جدید':p.badge==='sale'?'🔥 تخفیف':'⭐ پرفروش'}</span>`:''}
             <div class="product-image">${p.icon}</div>
             <h3>${p.name}</h3>
             <div class="product-desc">${p.desc}</div>
+            <div class="product-rating">
+                ${'⭐'.repeat(Math.floor(p.rating))} ${p.rating} (${p.reviews} نظر)
+            </div>
             <div class="product-price">
                 <span class="current">${p.price.toLocaleString()} تومان</span>
                 ${p.oldPrice?`<span class="old">${p.oldPrice.toLocaleString()} تومان</span>`:''}
@@ -1103,9 +1524,20 @@ function renderProducts(filter='all'){
             </button>
         </div>
     `).join('');
+    
+    if(typeof AOS !== 'undefined') AOS.refresh();
 }
 
-function filterProducts(filter){ renderProducts(filter); }
+function filterProductsBySearch(){
+    const search = document.getElementById('productSearch').value;
+    const filter = document.getElementById('shopFilter').value;
+    renderProducts(filter, search);
+}
+
+function filterProducts(filter){ 
+    const search = document.getElementById('productSearch').value;
+    renderProducts(filter, search); 
+}
 
 function addToCart(id){
     const p=PRODUCTS.find(x=>x.id===id);
@@ -1161,6 +1593,9 @@ function updateCartUI(){
     document.getElementById('cartTotal').textContent=total.toLocaleString()+' تومان';
     document.getElementById('checkoutBtn').disabled=false;
     document.getElementById('cartBadge').textContent=cart.reduce((s,i)=>s+i.qty,0);
+    
+    // ذخیره سبد خرید در localStorage
+    localStorage.setItem('cart', JSON.stringify(cart));
 }
 
 function toggleCart(){
@@ -1169,9 +1604,14 @@ function toggleCart(){
 }
 
 function checkout(){
+    if(!currentUser){
+        showToast('⚠️ لطفاً ابتدا وارد حساب کاربری خود شوید');
+        toggleAuth('login');
+        return;
+    }
     if(cart.length===0){ showToast('⚠️ سبد خرید خالی است'); return; }
     const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
-    const order={id:Date.now(),items:[...cart],total:total,status:'pending',date:new Date().toLocaleDateString('fa-IR')};
+    const order={id:Date.now(),items:[...cart],total:total,status:'pending',date:new Date().toLocaleDateString('fa-IR'),user:currentUser.email};
     orders.push(order);
     localStorage.setItem('orders',JSON.stringify(orders));
     showToast(`🛒 سفارش ثبت شد! مبلغ: ${total.toLocaleString()} تومان`);
@@ -1184,15 +1624,20 @@ function checkout(){
 
 function renderOrders(){
     const container=document.getElementById('ordersContainer');
-    if(orders.length===0){
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const userOrders = user ? orders.filter(o => o.user === user.email) : orders;
+    if(userOrders.length===0){
         container.innerHTML='<p style="color:var(--text-secondary);text-align:center;padding:40px 0;">هنوز سفارشی ثبت نشده است</p>';
         return;
     }
-    container.innerHTML=orders.map((o,i)=>`
+    container.innerHTML=userOrders.map((o,i)=>`
         <div class="order-card">
             <div class="order-header">
                 <span class="order-id">#${i+1} - ${o.date}</span>
                 <span class="order-status ${o.status}">${o.status==='pending'?'در انتظار پرداخت':o.status==='paid'?'پرداخت شده':o.status==='shipped'?'ارسال شده':'تحویل داده شده'}</span>
+                <span style="font-size:11px;color:var(--text-secondary);">
+                    <i class="fas fa-tag"></i> ${o.items.length} محصول
+                </span>
             </div>
             <div class="order-items">${o.items.map(it=>`${it.name} (${it.qty}×) - ${(it.price*it.qty).toLocaleString()} تومان`).join('<br>')}</div>
             <div class="order-total">جمع: ${o.total.toLocaleString()} تومان</div>
@@ -1201,7 +1646,7 @@ function renderOrders(){
 }
 
 // ============================================================
-// ۶. توابع بیماری‌ها
+// ۹. توابع بیماری‌ها
 // ============================================================
 function renderDiseases(filter='all'){
     const container=document.getElementById('diseasesContainer');
@@ -1214,6 +1659,7 @@ function renderDiseases(filter='all'){
         if(grouped[cat] && grouped[cat].length>0){
             const section=document.createElement('div');
             section.className='disease-category';
+            section.setAttribute('data-aos','fade-up');
             section.innerHTML=`
                 <div class="category-title"><i class="fas fa-tag" style="color:${cats[cat].color}"></i> ${cat} (${grouped[cat].length})</div>
                 <div class="disease-grid">
@@ -1236,6 +1682,7 @@ function renderDiseases(filter='all'){
             container.appendChild(section);
         }
     });
+    if(typeof AOS !== 'undefined') AOS.refresh();
 }
 
 function toggleTreatment(id){ document.getElementById('treatment_'+id)?.classList.toggle('show'); }
@@ -1249,7 +1696,7 @@ function filterDiseases(filter,el){
 }
 
 // ============================================================
-// ۷. توابع علف‌های هرز
+// ۱۰. توابع علف‌های هرز
 // ============================================================
 function renderWeeds(filter='all'){
     const container=document.getElementById('weedsContainer');
@@ -1266,7 +1713,7 @@ function renderWeeds(filter='all'){
     container.innerHTML=`
         <div class="weed-grid">
             ${filtered.map(w=>`
-                <div class="weed-card" onclick="toggleWeedControl('${w.id}')">
+                <div class="weed-card" onclick="toggleWeedControl('${w.id}')" data-aos="fade-up">
                     <div class="card-header"><span class="icon">${w.icon}</span><h4>${w.name}</h4></div>
                     <div class="sub">${w.desc}</div>
                     <div class="tags">
@@ -1282,6 +1729,7 @@ function renderWeeds(filter='all'){
             `).join('')}
         </div>
     `;
+    if(typeof AOS !== 'undefined') AOS.refresh();
 }
 
 function toggleWeedControl(id){ document.getElementById('weedControl_'+id)?.classList.toggle('show'); }
@@ -1295,14 +1743,75 @@ function filterWeeds(filter,el){
 }
 
 // ============================================================
-// ۸. توابع عمومی
+// ۱۱. توابع مقالات
+// ============================================================
+function renderArticles(){
+    const container=document.getElementById('articleGrid');
+    container.innerHTML=ARTICLES.map(a=>`
+        <div class="article-card" data-aos="fade-up">
+            <div class="article-image">${a.icon}</div>
+            <h3>${a.title}</h3>
+            <div class="article-excerpt">${a.excerpt}</div>
+            <div class="article-meta">
+                <span><i class="fas fa-calendar-alt"></i> ${a.date}</span>
+                <span><i class="fas fa-clock"></i> ${a.readTime}</span>
+                <span><i class="fas fa-tag"></i> ${a.category}</span>
+            </div>
+            <span class="read-more" onclick="showToast('📖 در حال باز کردن مقاله...')">ادامه مطلب →</span>
+        </div>
+    `).join('');
+    if(typeof AOS !== 'undefined') AOS.refresh();
+}
+
+// ============================================================
+// ۱۲. توابع سوالات متداول
+// ============================================================
+function renderFAQ(){
+    const container=document.getElementById('faqContainer');
+    container.innerHTML=FAQ_DATA.map((item,index)=>`
+        <div class="faq-item" onclick="toggleFAQ(${index})">
+            <div class="faq-question">
+                <span>${item.q}</span>
+                <i class="fas fa-chevron-down" id="faqIcon_${index}"></i>
+            </div>
+            <div class="faq-answer" id="faqAnswer_${index}">${item.a}</div>
+        </div>
+    `).join('');
+}
+
+function toggleFAQ(index){
+    const answer=document.getElementById(`faqAnswer_${index}`);
+    const icon=document.getElementById(`faqIcon_${index}`);
+    answer.classList.toggle('show');
+    icon.classList.toggle('fa-chevron-down');
+    icon.classList.toggle('fa-chevron-up');
+}
+
+// ============================================================
+// ۱۳. توابع عمومی
 // ============================================================
 function enterSite(){
     document.getElementById('welcomePage').classList.add('hidden');
     document.getElementById('mainContent').style.display='block';
+    
+    // راه‌اندازی AOS
+    AOS.init({duration:600,once:true,offset:50});
+    
+    // بازیابی سبد خرید
+    const savedCart = localStorage.getItem('cart');
+    if(savedCart) cart = JSON.parse(savedCart);
+    updateCartUI();
+    
+    // بازیابی کاربر
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if(user) currentUser = user;
+    updateUserUI();
+    
     renderProducts('all');
     renderDiseases('all');
     renderWeeds('all');
+    renderArticles();
+    renderFAQ();
     initMap();
     updateAdminStats();
     const saved=localStorage.getItem('orders');
@@ -1310,10 +1819,11 @@ function enterSite(){
     renderDashboard();
     document.getElementById('statWeeds').textContent=WEED_DATA.length;
     showToast('🌱 به SmartTree AI خوش آمدید!');
-    console.log('🌳 SmartTree AI v8.0 راه‌اندازی شد!');
+    console.log('🌳 SmartTree AI v9.0 راه‌اندازی شد!');
     console.log(`📋 ${DISEASE_DATA.length} بیماری در سیستم ثبت شد`);
     console.log(`🌾 ${WEED_DATA.length} علف هرز در سیستم ثبت شد`);
     console.log(`🛒 ${PRODUCTS.length} محصول در فروشگاه موجود است`);
+    console.log(`📰 ${ARTICLES.length} مقاله آموزشی`);
 }
 
 function navigateTo(page,el){
@@ -1325,6 +1835,7 @@ function navigateTo(page,el){
     if(page==='map' && mapInstance) setTimeout(()=>mapInstance.invalidateSize(),300);
     if(page==='orders') renderOrders();
     if(page==='dashboard') renderDashboard();
+    if(page==='articles') renderArticles();
 }
 
 function initMap(){
@@ -1393,20 +1904,42 @@ function handleAIUpload(input){
     result.classList.remove('show');
     document.querySelector('.ai-status').textContent='⏳ در حال پردازش...';
     document.querySelector('.ai-status').style.background='#f39c12';
+    
+    // نمایش پیشرفت
+    const progress = document.getElementById('aiProgress');
+    const progressBar = document.getElementById('aiProgressBar');
+    const progressText = document.getElementById('aiProgressText');
+    progress.classList.add('show');
+    let p = 0;
+    const interval = setInterval(() => {
+        p += Math.floor(Math.random() * 10) + 5;
+        if(p > 100) p = 100;
+        progressBar.style.width = p + '%';
+        progressText.textContent = `در حال آپلود... ${p}%`;
+        if(p >= 100) clearInterval(interval);
+    }, 200);
+    
     showToast('🧠 AI در حال تحلیل تصویر...');
     setTimeout(()=>{
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        progressText.textContent = '✅ تحلیل کامل شد!';
+        setTimeout(() => progress.classList.remove('show'), 500);
+        
         const d=DISEASE_DATA[Math.floor(Math.random()*DISEASE_DATA.length)];
         const conf=78+Math.floor(Math.random()*20);
+        const severity = ['خفیف','متوسط','شدید'][Math.floor(Math.random()*3)];
         document.getElementById('aiDisease').textContent=d.name;
+        document.getElementById('aiSeverity').textContent=severity;
         document.getElementById('aiConfidence').textContent=conf+'%';
         document.getElementById('aiConfidenceBar').style.width=conf+'%';
         document.getElementById('aiTreatment').textContent=d.treatment;
         result.classList.add('show');
         document.querySelector('.ai-status').textContent='✅ تشخیص انجام شد';
         document.querySelector('.ai-status').style.background='#27ae60';
-        addAdminMessage('سیستم',`تشخیص بیماری: ${d.name} (${conf}%)`);
+        addAdminMessage('سیستم',`تشخیص بیماری: ${d.name} (${conf}%) - شدت: ${severity}`);
         showToast(`✅ تشخیص: ${d.name} (${conf}%)`);
-    },2000);
+    },2500);
 }
 
 function handleWeedAIUpload(input){
@@ -1416,8 +1949,28 @@ function handleWeedAIUpload(input){
     result.classList.remove('show');
     document.getElementById('weedAiStatus').textContent='⏳ در حال پردازش...';
     document.getElementById('weedAiStatus').style.background='#f39c12';
+    
+    // نمایش پیشرفت
+    const progress = document.getElementById('weedProgress');
+    const progressBar = document.getElementById('weedProgressBar');
+    const progressText = document.getElementById('weedProgressText');
+    progress.classList.add('show');
+    let p = 0;
+    const interval = setInterval(() => {
+        p += Math.floor(Math.random() * 10) + 5;
+        if(p > 100) p = 100;
+        progressBar.style.width = p + '%';
+        progressText.textContent = `در حال آپلود... ${p}%`;
+        if(p >= 100) clearInterval(interval);
+    }, 200);
+    
     showToast('🧠 AI در حال تحلیل علف هرز...');
     setTimeout(()=>{
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        progressText.textContent = '✅ تحلیل کامل شد!';
+        setTimeout(() => progress.classList.remove('show'), 500);
+        
         const w=WEED_DATA[Math.floor(Math.random()*WEED_DATA.length)];
         const conf=78+Math.floor(Math.random()*20);
         document.getElementById('weedName').textContent=w.name;
@@ -1431,11 +1984,11 @@ function handleWeedAIUpload(input){
         document.getElementById('weedAiStatus').style.background='#27ae60';
         addAdminMessage('سیستم',`تشخیص علف هرز: ${w.name} (${conf}%)`);
         showToast(`✅ تشخیص علف هرز: ${w.name} (${conf}%)`);
-    },2000);
+    },2500);
 }
 
 // ============================================================
-// ۹. پنل ادمین
+// ۱۴. پنل ادمین
 // ============================================================
 function renderDashboard(){
     renderDashboardStats();
@@ -1467,6 +2020,7 @@ function renderDashboardProducts(){
             <td>${p.category === 'pesticide' ? 'سموم' : p.category === 'fertilizer' ? 'کودها' : 'سایر'}</td>
             <td>${p.price.toLocaleString()} تومان</td>
             <td>${p.stock}</td>
+            <td>${'⭐'.repeat(Math.floor(p.rating))}</td>
             <td>
                 <button class="btn-sm btn-edit" onclick="editProduct(${p.id})"><i class="fas fa-edit"></i></button>
                 <button class="btn-sm btn-delete" onclick="deleteProduct(${p.id})"><i class="fas fa-trash"></i></button>
@@ -1523,7 +2077,7 @@ function addNewProduct(){
     const newProduct = {
         id: Date.now(),
         name, category, price, icon, desc: desc || 'محصول جدید',
-        oldPrice: null, badge, stock
+        oldPrice: null, badge, stock, rating:0, reviews:0
     };
     
     PRODUCTS.push(newProduct);
@@ -1550,6 +2104,8 @@ function editProduct(id){
     if (newPrice) p.price = parseInt(newPrice);
     const newStock = prompt('موجودی جدید:', p.stock);
     if (newStock) p.stock = parseInt(newStock);
+    const newRating = prompt('امتیاز جدید (۱-۵):', p.rating);
+    if (newRating) p.rating = parseFloat(newRating);
     renderProducts(currentFilter);
     renderDashboardProducts();
     showToast('✅ محصول بروزرسانی شد');
@@ -1676,7 +2232,7 @@ function initTopProductsChart(){
 }
 
 // ============================================================
-// ۱۰. مدیریت پیام‌ها
+// ۱۵. مدیریت پیام‌ها
 // ============================================================
 function addAdminMessage(user, msg){
     const now=new Date();
@@ -1707,7 +2263,7 @@ function updateAdminStats(){
 }
 
 // ============================================================
-// ۱۱. چت‌بات هوشمند
+// ۱۶. چت‌بات هوشمند
 // ============================================================
 const CHAT_RESPONSES = {
     'سلام': '🌱 سلام! چطور می‌توانم کمک کنم؟',
@@ -1743,6 +2299,10 @@ const CHAT_RESPONSES = {
     'موجودی': '📦 موجودی محصولات در فروشگاه نمایش داده می‌شود.',
     'تخفیف': '🔥 محصولات با تخفیف در فروشگاه مشخص شده‌اند.',
     'پرداخت': '💳 پرداخت از طریق زرین‌پال انجام می‌شود.',
+    'ثبت‌نام': '📝 برای ثبت‌نام، روی آیکون کاربر در هدر کلیک کنید.',
+    'ورود': '🔑 برای ورود، روی آیکون کاربر در هدر کلیک کنید.',
+    'مقاله': '📰 مقالات آموزشی را در بخش مقالات مشاهده کنید.',
+    'سوال': '❓ سوالات متداول را در بخش سوالات متداول مشاهده کنید.',
     'default': '🌱 من هنوز این سوال را یاد نگرفته‌ام. لطفاً سوال دقیق‌تری بپرسید یا با مشاور تماس بگیرید.\n📞 ۰۹۳۸۱۴۹۱۰۵۸'
 };
 
@@ -1791,7 +2351,7 @@ function sendMessage(){
 }
 
 // ============================================================
-// ۱۲. دارک مود و توست
+// ۱۷. دارک مود و توست
 // ============================================================
 function toggleDark(){
     document.body.classList.toggle('dark');
@@ -1809,14 +2369,16 @@ function showToast(msg,isError=false){
 }
 
 // ============================================================
-// ۱۳. شروع
+// ۱۸. شروع
 // ============================================================
-console.log('🌳 SmartTree AI v8.0 - نسخه نهایی با پنل ادمین');
+console.log('🌳 SmartTree AI v9.0 - نسخه نهایی پیشرفته');
 console.log(`📋 ${DISEASE_DATA.length} بیماری در سیستم ثبت شد`);
 console.log(`🌾 ${WEED_DATA.length} علف هرز در سیستم ثبت شد`);
 console.log(`🛒 ${PRODUCTS.length} محصول در فروشگاه موجود است`);
+console.log(`📰 ${ARTICLES.length} مقاله آموزشی`);
 console.log('📞 مشاور: ۰۹۳۸۱۴۹۱۰۵۸');
 console.log('👑 پنل ادمین: بدون نیاز به لاگین');
+console.log('🔐 سیستم ثبت‌نام و ورود: فعال');
 </script>
 
 </body>
